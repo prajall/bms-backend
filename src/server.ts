@@ -10,11 +10,7 @@ app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   // connect to database
   try {
-    await mongoose.connect(`${process.env.MONGO_URI}/bms`, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      retryWrites: true,
-    });
+    await mongoose.connect(`${process.env.MONGO_URI}/bms`);
     console.log("Database connected successfully");
   } catch (error: any) {
     console.error("Database connection failed:", error.message);
