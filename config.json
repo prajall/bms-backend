@@ -1,0 +1,25 @@
+{
+  "appName": "Test 2",
+  "theme": "",
+  "setupComplete": true,
+  "name": "pppp",
+  "help": false,
+  "roles": [
+    {
+      "name": "admin",
+      "permissions": []
+    },
+    {
+      "name": "user",
+      "permissions": [
+        {
+          "module": "product",
+          "actions": [
+            "view",
+            "edit"
+          ]
+        }
+      ]
+    }
+  ]
+}
