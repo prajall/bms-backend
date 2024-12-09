@@ -1,0 +1,8 @@
+{
+  "appName": "BMS",
+  "features": {
+    "enableCustomerLogin": true,
+    "enableEmployeeLogin": true,
+    "enableHomepage": true
+  }
+}

@@ -1,17 +1,21 @@
 import express, { Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
-import userRoutes from "./api/v1/user/user.route";
-import installationRoutes from "./api/v1/installation/installation.route";
-import categoryRoutes from "./api/v1/items/category/category.route";
+
+import posRoutes from "./api/v1/pos/pos.route";
 import roleRoutes from "./api/v1/role/role.route";
-import productRoutes from "./api/v1/items/products/product.route";
+import userRoutes from "./api/v1/user/user.route";
+import configRoutes from "./api/v1/config/config.route";
 import partRoutes from "./api/v1/items/parts/parts.route";
 import employeeRoutes from "./api/v1/employee/employee.route";
 import customerRoutes from "./api/v1/customer/customer.route";
 import serviceRoutes from "./api/v1/service/service/service.route";
+import productRoutes from "./api/v1/items/products/product.route";
+import categoryRoutes from "./api/v1/items/category/category.route";
+import installationRoutes from "./api/v1/installation/installation.route";
 import serviceOrderRoutes from "./api/v1/service/serviceOrder/serviceOrder.route";
 import serviceProvidedRoutes from "./api/v1/service/serviceProvided/serviceProvided.route";
 import serviceBillingRoutes from "./api/v1/service/serviceBilling/serviceBilling.route";
+
 import { apiError, apiResponse } from "./utils/response.util";
 import cors from "cors";
 import "./api/v1/user/user.model";
@@ -76,9 +80,11 @@ apiRoutes.use("/service", serviceRoutes);
 apiRoutes.use("/service-order", serviceOrderRoutes);
 apiRoutes.use("/service-provided", serviceProvidedRoutes);
 apiRoutes.use("/service-billing", serviceBillingRoutes);
+apiRoutes.use("/pos", posRoutes);
+apiRoutes.use("/config", configRoutes);
 
 apiRoutes.get("/test", async (req: Request, res: Response) => {
-  console.log("Testing !", process.env.MONGO_URI);
+  console.log("Testing !");
   try {
     await mongoose.connect(`${process.env.MONGO_URI}/bms`);
     console.log("Database connected successfully");
@@ -86,9 +92,5 @@ apiRoutes.get("/test", async (req: Request, res: Response) => {
     console.error("Database connection failed:", error.message);
     process.exit(1);
   }
-  return apiResponse(
-    res,
-    200,
-    `Test route is working! ${process.env.MONGO_URI}`
-  );
+  return apiResponse(res, 200, `Test route is working!`);
 });

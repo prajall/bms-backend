@@ -1,0 +1,16 @@
+{
+  "mail": {
+    "smtpHost": "smtp.mailtrap.io",
+    "port": 2525,
+    "username": "default_mail_user",
+    "password": "default_mail_pass"
+  },
+  "sms": {
+    "provider": "twilio",
+    "apiKey": "default_sms_api_key"
+  },
+  "payment": {
+    "gateway": "stripe",
+    "apiKey": "default_payment_api_key"
+  }
+}

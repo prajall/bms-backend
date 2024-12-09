@@ -43,11 +43,6 @@ export const validatePart = [
     .isObject()
     .withMessage("Base image must be an object containing image URLs"),
 
-  body("products")
-    .optional()
-    .isArray()
-    .withMessage("Products must be an array of product IDs"),
-
   body("tags")
     .optional()
     .isArray()

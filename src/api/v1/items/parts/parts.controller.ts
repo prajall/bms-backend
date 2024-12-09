@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Part from "./parts.model";
-import Product from "../products/product.model";
 import { apiResponse, apiError } from "../../../../utils/response.util";
 import mongoose from "mongoose";
 
@@ -25,7 +24,6 @@ export const createPart = async (req: Request, res: Response) => {
       brand: req.body.brand,
       discount: req.body.discount,
       baseImage: req.body.baseImage,
-      products: req.body.products,
       costPrice: req.body.costPrice,
       sellingPrice: req.body.sellingPrice,
       stock: req.body.stock,
@@ -71,7 +69,6 @@ export const getAllParts = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalParts / limit);
 
     const parts = await Part.find(query)
-      .populate({ path: "products", select: "name sku", strictPopulate: false })
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -114,7 +111,6 @@ export const getPartsMiniList = async (req: Request, res: Response) => {
 
     const parts = await Part.find(query)
       .select("name modelNo")
-      .populate({ path: "products", select: "name", strictPopulate: false })
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -142,9 +138,7 @@ export const getPartById = async (req: Request, res: Response) => {
       return apiError(res, 400, "Invalid part ID format");
     }
 
-    const part = await Part.findById(id)
-      .populate({ path: "products", select: "name sku", strictPopulate: false })
-      .lean();
+    const part = await Part.findById(id).lean();
 
     if (!part) {
       return apiError(res, 404, "Part not found");
@@ -191,7 +185,6 @@ export const updatePart = async (req: Request, res: Response) => {
         brand: req.body.brand,
         discount: req.body.discount,
         baseImage: req.body.baseImage,
-        products: req.body.products,
         costPrice: req.body.costPrice,
         sellingPrice: req.body.sellingPrice,
         stock: req.body.stock,
@@ -205,7 +198,7 @@ export const updatePart = async (req: Request, res: Response) => {
         new: true,
         runValidators: true,
       }
-    ).populate({ path: "products", select: "name sku", strictPopulate: false });
+    );
 
     if (!updatedPart) {
       return apiError(res, 404, "Part not found");

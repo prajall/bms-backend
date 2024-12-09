@@ -30,14 +30,6 @@ const partsSchema = new mongoose.Schema(
       medium: String,
       full: String,
     },
-    products: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
-        required: false,
-        index: true,
-      },
-    ],
     costPrice: {
       type: Number,
       required: [true, "Cost price is required"],

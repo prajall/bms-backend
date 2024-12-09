@@ -178,9 +178,9 @@ export const getUserRole = async (req: Request, res: Response) => {
     return apiError(res, 401, "Unauthorized");
   }
   try {
-    // const role = await Role.findOne({ name: user.role });
-    const roles: RoleProp[] = getConfigValue("roles") || [];
-    const role = roles.find((role) => role.name === user.role);
+    const role = await Role.findOne({ name: user.role });
+    // const roles: RoleProp[] = getConfigValue("roles") || [];
+    // const role = roles.find((role) => role.name === user.role);
 
     if (!role) {
       return apiError(res, 404, "Role not found");
