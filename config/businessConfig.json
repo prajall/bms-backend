@@ -1,5 +1,41 @@
 {
-  "appName": "BMS",
+  "businessName": "BMS",
+  "address": "Kathmandu, Nepal",
+  "phone": "9818000000",
+  "email": "info@bms.com",
+  "logo": "https://bms.com/logo.png",
+  "favicon": "https://bms.com/favicon.ico",
+  "currency": "NPR",
+  "passwordVerification": {
+    "type": "phone",
+    "optEnabled": true
+  },
+
+  "notifications": {
+    "newOrder": {
+      "enabled": true,
+      "email": true,
+      "sms": true
+    },
+    "orderComplete": {
+      "enabled": true,
+      "email": true,
+      "sms": true
+    },
+    "upcommingOrder": {
+      "enabled": true,
+      "email": true,
+      "sms": true,
+      "daysBefore": [0, 3, 7],
+      "notificationTime": "07:00"
+    },
+    "orderCancelled": {
+      "enabled": true,
+      "email": true,
+      "sms": true
+    }
+  },
+
   "features": {
     "enableCustomerLogin": true,
     "enableEmployeeLogin": true,

@@ -1,16 +1,37 @@
 {
-  "mail": {
-    "smtpHost": "smtp.mailtrap.io",
-    "port": 2525,
-    "username": "default_mail_user",
-    "password": "default_mail_pass"
+  "database": {
+    "username": "root",
+    "password": "root",
+    "host": "localhost",
+    "port": 27017,
+    "database": "bms"
   },
-  "sms": {
-    "provider": "twilio",
-    "apiKey": "default_sms_api_key"
-  },
-  "payment": {
-    "gateway": "stripe",
-    "apiKey": "default_payment_api_key"
+  "mail": [
+    {
+      "smtpHost": "smtp.mailtrap.io",
+      "port": 2525,
+      "username": "default_mail_user",
+      "password": "default_mail_pass"
+    }
+  ],
+  "sms": [
+    {
+      "provider": "sparrowsms",
+      "apiKey": "default_sms_api_key"
+    }
+  ],
+  "payment": [
+    {
+      "gateway": "khalti",
+      "apiKey": "default_payment_api_key"
+    },
+    {
+      "gateway": "esewa",
+      "apiKey": "default_payment_api_key"
+    }
+  ],
+  "maintenanceMode": {
+    "enable": false,
+    "message": "We are currently undergoing maintenance. Please check back later."
   }
 }
