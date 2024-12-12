@@ -33,5 +33,10 @@
   "maintenanceMode": {
     "enable": false,
     "message": "We are currently undergoing maintenance. Please check back later."
+  },
+  "features": {
+    "enableCustomerLogin": true,
+    "enableEmployeeLogin": true,
+    "enableHomepage": true
   }
 }

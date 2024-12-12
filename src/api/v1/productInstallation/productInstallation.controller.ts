@@ -57,10 +57,6 @@ export const getAllProductInstallations = async (
       .populate({ path: "addedServices", select: "serviceId date status" })
       .sort({ installationDate: -1 });
 
-    if (!installations || installations.length === 0) {
-      return apiResponse(res, 404, "No product installations found");
-    }
-
     return apiResponse(
       res,
       200,

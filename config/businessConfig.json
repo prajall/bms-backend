@@ -34,11 +34,7 @@
       "email": true,
       "sms": true
     }
-  },
-
-  "features": {
-    "enableCustomerLogin": true,
-    "enableEmployeeLogin": true,
-    "enableHomepage": true
   }
+
+  
 }

@@ -13,6 +13,7 @@ import productRoutes from "./api/v1/items/products/product.route";
 import categoryRoutes from "./api/v1/items/category/category.route";
 import installationRoutes from "./api/v1/installation/installation.route";
 import serviceOrderRoutes from "./api/v1/service/serviceOrder/serviceOrder.route";
+import productInstallationRoutes from "./api/v1/productInstallation/productInstallation.route";
 import serviceProvidedRoutes from "./api/v1/service/serviceProvided/serviceProvided.route";
 import serviceBillingRoutes from "./api/v1/service/serviceBilling/serviceBilling.route";
 
@@ -74,6 +75,7 @@ apiRoutes.use("/role", roleRoutes);
 apiRoutes.use("/category", categoryRoutes);
 apiRoutes.use("/product", productRoutes);
 apiRoutes.use("/part", partRoutes);
+apiRoutes.use("/product-installation", productInstallationRoutes);
 apiRoutes.use("/employee", employeeRoutes);
 apiRoutes.use("/customer", customerRoutes);
 apiRoutes.use("/service", serviceRoutes);

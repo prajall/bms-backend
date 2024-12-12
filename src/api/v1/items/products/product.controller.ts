@@ -147,7 +147,7 @@ export const getProductsMiniList = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     const products = await Product.find(query)
-      .select("name category modelNo")
+      .select("name category modelNo sellingPrice baseImage")
       .populate("category", "name")
       .sort({ [sortField]: sortOrder })
       .skip(skip)

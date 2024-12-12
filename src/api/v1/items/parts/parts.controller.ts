@@ -3,7 +3,6 @@ import Part from "./parts.model";
 import { apiResponse, apiError } from "../../../../utils/response.util";
 import mongoose from "mongoose";
 
-// Create Part
 export const createPart = async (req: Request, res: Response) => {
   try {
     const employee = req.employee;
