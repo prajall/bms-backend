@@ -8,6 +8,7 @@ export const createService = async (req: Request, res: Response) => {
       title: req.body.title,
       serviceType: req.body.serviceType,
       products: req.body.products,
+      parts: req.body.parts,
       workDetail: req.body.workDetail,
       isRecurring: req.body.isRecurring,
       interval: req.body.interval,
@@ -30,16 +31,37 @@ export const createService = async (req: Request, res: Response) => {
 
 export const getAllServices = async (req: Request, res: Response) => {
   try {
-    const services = await Service.find().populate({
-      path: "products",
-      select: "name description brand baseImage",
-    });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const services = await Service.find()
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "products",
+        select: "name description brand baseImage sellingPrice",
+      })
+      .populate({
+        path: "parts",
+        select: "name description baseImage sellingPrice",
+      });
+
+    const totalServices = await Service.countDocuments();
 
     if (!services || services.length === 0) {
       return apiResponse(res, 404, "No services found");
     }
 
-    return apiResponse(res, 200, "Services retrieved successfully", services);
+    const totalPages = Math.ceil(totalServices / limit);
+
+    return apiResponse(res, 200, "Services retrieved successfully", {
+      services,
+      currentPage: page,
+      totalPages,
+      totalServices,
+    });
   } catch (error) {
     console.error("Get all services error:", error);
     return apiError(res, 500, "Internal server error", error);

@@ -12,10 +12,12 @@ export const validateService = [
     .withMessage("Service type is required")
     .isString()
     .withMessage("Service type must be a string"),
-  body("products")
-    .isArray({ min: 1 })
-    .withMessage("Products must be an array with at least one product"),
+  body("products").isArray().withMessage("Products must be an array"),
   body("products.*")
+    .isMongoId()
+    .withMessage("Each product must be a valid MongoDB ObjectId"),
+  body("parts").isArray().withMessage("parts must be an array"),
+  body("parts.*")
     .isMongoId()
     .withMessage("Each product must be a valid MongoDB ObjectId"),
   body("workDetail")
