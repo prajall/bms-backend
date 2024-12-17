@@ -36,13 +36,6 @@ const productInstallationSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    addedServices: [
-      //service Order
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ServiceOrder",
-      },
-    ],
   },
   { timestamps: true }
 );

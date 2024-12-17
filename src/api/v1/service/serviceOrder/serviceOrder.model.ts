@@ -29,6 +29,10 @@ const serviceOrderSchema = new mongoose.Schema(
         ref: "ServiceProvided",
       },
     ],
+    status: {
+      type: "string",
+      enum: ["pending", "completed", "cancelled", "delayed"],
+    },
   },
   { timestamps: true }
 );

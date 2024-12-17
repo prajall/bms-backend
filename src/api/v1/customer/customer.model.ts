@@ -24,7 +24,7 @@ const customerSchema = new Schema(
     address: {
       country: { type: String, required: true },
       province: { type: String, required: true },
-      city: { type: String, required: true },
+      city: { type: String },
       addressLine: { type: String },
       houseNo: { type: String },
     },

@@ -50,6 +50,25 @@ const posSchema = new mongoose.Schema(
         },
       },
     ],
+    installation: {
+      type: {
+        installationId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "ProductInstallation",
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+        additionalNotes: {
+          type: String,
+          maxlength: 1000,
+        },
+      },
+      required: false,
+    },
     services: [
       {
         serviceId: {
@@ -71,29 +90,27 @@ const posSchema = new mongoose.Schema(
         },
       },
     ],
-    installations: [
-      {
-        installationId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProductInstallation",
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        additionalNotes: {
-          type: String,
-          maxlength: 1000,
-        },
-      },
-    ],
-
     totalPrice: {
       type: Number,
       required: true,
       min: 0,
+    },
+    subTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    tax: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
     },
   },
   {

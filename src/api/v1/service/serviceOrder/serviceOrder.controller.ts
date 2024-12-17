@@ -8,11 +8,11 @@ export const createServiceOrder = async (req: Request, res: Response) => {
   try {
     const serviceOrder = await ServiceOrder.create({
       serviceId: req.body.serviceId,
-      customerId: req.body.customerId,
-      date: req.body.date,
+      // customerId: req.body.customerId,
+      // date: req.body.date,
       recurring: req.body.recurring,
       nextServiceDate: req.body.nextServiceDate,
-      serviceCharge: req.body.serviceCharge,
+      // serviceCharge: req.body.serviceCharge,
       serviceProvided: req.body.serviceProvided,
     });
 

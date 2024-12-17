@@ -8,17 +8,30 @@ const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
 // Create a new POS record
 export const createPOS = async (req: Request, res: Response) => {
   try {
-    const { products, parts, services, customerType, customer, totalPrice } =
-      req.body;
-
-    // Create the POS record
-    const pos = await POS.create({
+    const {
       products,
       parts,
       services,
       customerType,
       customer,
       totalPrice,
+      tax,
+      subTotal,
+      discount,
+    } = req.body;
+
+    // Create the POS record
+    const pos = await POS.create({
+      products,
+      parts,
+      services,
+      customerType: customerType || "walking",
+      customer,
+      totalPrice,
+      tax,
+      subTotal,
+      discount,
+      date: new Date(),
     });
 
     if (!pos) {
@@ -26,46 +39,50 @@ export const createPOS = async (req: Request, res: Response) => {
     }
 
     // Process service orders
-    const serviceOrdersData = await Promise.all(
-      services.map(async (service: any) => {
-        try {
-          const serviceDetails = await Service.findById(
-            service.serviceId
-          ).exec();
+    if (services && services.length > 0) {
+      const serviceOrdersData = await Promise.all(
+        services.map(async (service: any) => {
+          try {
+            const serviceDetails = await Service.findById(
+              service.serviceId
+            ).exec();
 
-          // Calculate nextServiceDate if the service is recurring
-          let nextServiceDate = null;
-          if (serviceDetails?.isRecurring && serviceDetails.interval) {
-            const intervalInDays = serviceDetails.interval;
-            nextServiceDate = new Date();
-            nextServiceDate.setDate(nextServiceDate.getDate() + intervalInDays);
+            // Calculate nextServiceDate if the service is recurring
+            let nextServiceDate = null;
+            if (serviceDetails?.isRecurring && serviceDetails.interval) {
+              const intervalInDays = serviceDetails.interval;
+              nextServiceDate = new Date();
+              nextServiceDate.setDate(
+                nextServiceDate.getDate() + intervalInDays
+              );
+            }
+
+            return {
+              serviceId: service.serviceId,
+              customerId:
+                customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
+              date: service.date,
+              nextServiceDate,
+              serviceCharge: service.price,
+            };
+          } catch (error) {
+            console.error("Error processing service order:", error);
+            throw new Error(
+              `Failed to process service with ID: ${service.serviceId}`
+            );
           }
+        })
+      );
 
-          return {
-            serviceId: service.serviceId,
-            customerId:
-              customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
-            date: service.date,
-            nextServiceDate,
-            serviceCharge: service.price,
-          };
-        } catch (error) {
-          console.error("Error processing service order:", error);
-          throw new Error(
-            `Failed to process service with ID: ${service.serviceId}`
-          );
-        }
-      })
-    );
-
-    // Insert service orders into the database
-    const createdServiceOrders = await ServiceOrder.insertMany(
-      serviceOrdersData
-    );
+      // Insert service orders into the database
+      const createdServiceOrders = await ServiceOrder.insertMany(
+        serviceOrdersData
+      );
+    }
 
     return apiResponse(res, 201, "POS record created successfully", {
       pos,
-      serviceOrders: createdServiceOrders,
+      // serviceOrders: createdServiceOrders,
     });
   } catch (error: any) {
     console.error("Create POS error:", error);
