@@ -18,7 +18,7 @@ export const getAllConfig = async (req: Request, res: Response) => {
 };
 
 export const getConfig = async (req: Request, res: Response) => {
-  const key = req.query.key as string;
+  const key = req.body.key as string;
   const type = req.query.type as string;
   if (!["business", "system"].includes(type)) {
     return apiResponse(res, 400, "Invalid config type", null);
@@ -30,8 +30,8 @@ export const getConfig = async (req: Request, res: Response) => {
 };
 
 export const updateConfigValue = async (req: Request, res: Response) => {
-  const key = req.query.key as string;
-  const value = req.query.value as string;
+  const key = req.body.key as string;
+  const value = req.body.value as string;
   const type = req.query.type as string;
   if (!["business", "system"].includes(type)) {
     return apiResponse(res, 400, "Invalid config type", null);
