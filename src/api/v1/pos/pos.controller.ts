@@ -3,6 +3,7 @@ import POS from "./pos.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import Service from "../service/service/service.model";
+import { createOrder } from "../order/order.controller";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
 // Create a new POS record
@@ -20,7 +21,13 @@ export const createPOS = async (req: Request, res: Response) => {
       discount,
     } = req.body;
 
-    // Create the POS record
+    const { orderId, order } = await createOrder(
+      customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
+      "pos"
+    );
+
+    console.log("OrderId: ", orderId);
+
     const pos = await POS.create({
       products,
       parts,
@@ -32,60 +39,64 @@ export const createPOS = async (req: Request, res: Response) => {
       subTotal,
       discount,
       date: new Date(),
+      orderId,
+      order: order._id,
     });
 
     if (!pos) {
       return apiError(res, 400, "Failed to create POS record");
     }
 
-    // Process service orders
-    if (services && services.length > 0) {
-      const serviceOrdersData = await Promise.all(
-        services.map(async (service: any) => {
-          try {
-            const serviceDetails = await Service.findById(
-              service.serviceId
-            ).exec();
+    // Step 3: Process service orders, if any
+    // let createdServiceOrders: any[] = [];
+    // if (services && services.length > 0) {
+    //   const serviceOrdersData = await Promise.all(
+    //     services.map(async (service: any) => {
+    //       try {
+    //         const serviceDetails = await Service.findById(
+    //           service.serviceId
+    //         ).exec();
 
-            // Calculate nextServiceDate if the service is recurring
-            let nextServiceDate = null;
-            if (serviceDetails?.isRecurring && serviceDetails.interval) {
-              const intervalInDays = serviceDetails.interval;
-              nextServiceDate = new Date();
-              nextServiceDate.setDate(
-                nextServiceDate.getDate() + intervalInDays
-              );
-            }
+    //         // Calculate nextServiceDate if the service is recurring
+    //         let nextServiceDate = null;
+    //         if (serviceDetails?.isRecurring && serviceDetails.interval) {
+    //           const intervalInDays = serviceDetails.interval;
+    //           nextServiceDate = new Date();
+    //           nextServiceDate.setDate(
+    //             nextServiceDate.getDate() + intervalInDays
+    //           );
+    //         }
 
-            return {
-              serviceId: service.serviceId,
-              customerId:
-                customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
-              date: service.date,
-              nextServiceDate,
-              serviceCharge: service.price,
-            };
-          } catch (error) {
-            console.error("Error processing service order:", error);
-            throw new Error(
-              `Failed to process service with ID: ${service.serviceId}`
-            );
-          }
-        })
-      );
+    //         return {
+    //           serviceId: service.serviceId,
+    //           customerId:
+    //             customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
+    //           date: service.date,
+    //           nextServiceDate,
+    //           serviceCharge: service.price,
+    //           orderId: order._id, // Link service orders to the newly created Order
+    //         };
+    //       } catch (error) {
+    //         console.error("Error processing service order:", error);
+    //         throw new Error(
+    //           `Failed to process service with ID: ${service.serviceId}`
+    //         );
+    //       }
+    //     })
+    //   );
 
-      // Insert service orders into the database
-      const createdServiceOrders = await ServiceOrder.insertMany(
-        serviceOrdersData
-      );
-    }
+    //   // Insert service orders into the database
+    //   createdServiceOrders = await ServiceOrder.insertMany(serviceOrdersData);
+    // }
 
+    // Step 4: Return success response
     return apiResponse(res, 201, "POS record created successfully", {
       pos,
-      // serviceOrders: createdServiceOrders,
+      orderId: order.orderNo,
+      // createdServiceOrders,
     });
   } catch (error: any) {
-    console.error("Create POS error:", error);
+    console.error("Create POS error:", error.message);
     return apiError(res, 500, "Error creating POS record", error.message);
   }
 };

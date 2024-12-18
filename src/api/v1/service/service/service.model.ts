@@ -46,6 +46,11 @@ const serviceSchema = new mongoose.Schema(
       enum: ["available", "unavailable"],
       default: "available",
     },
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true,
+    },
   },
   { timestamps: true }
 );

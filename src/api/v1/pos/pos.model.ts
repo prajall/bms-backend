@@ -112,6 +112,14 @@ const posSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    orderId: {
+      type: String,
+      required: true,
+    },
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+    },
   },
   {
     timestamps: true,

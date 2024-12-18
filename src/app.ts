@@ -16,6 +16,7 @@ import serviceOrderRoutes from "./api/v1/service/serviceOrder/serviceOrder.route
 import productInstallationRoutes from "./api/v1/productInstallation/productInstallation.route";
 import serviceProvidedRoutes from "./api/v1/service/serviceProvided/serviceProvided.route";
 import serviceBillingRoutes from "./api/v1/service/serviceBilling/serviceBilling.route";
+import orderRoutes from "./api/v1/order/order.route";
 
 import { apiError, apiResponse } from "./utils/response.util";
 import cors from "cors";
@@ -41,7 +42,7 @@ app.use(cookieParser());
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 app.use(upload.none());
-//parse nested fields
+//parse nested fields for formData
 app.use(parseNestedFields);
 
 // CORS configuration
@@ -84,6 +85,7 @@ apiRoutes.use("/service-provided", serviceProvidedRoutes);
 apiRoutes.use("/service-billing", serviceBillingRoutes);
 apiRoutes.use("/pos", posRoutes);
 apiRoutes.use("/config", configRoutes);
+apiRoutes.use("/order", orderRoutes);
 
 apiRoutes.get("/test", async (req: Request, res: Response) => {
   console.log("Testing !");
