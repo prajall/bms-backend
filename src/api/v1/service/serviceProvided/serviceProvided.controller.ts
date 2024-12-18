@@ -8,8 +8,8 @@ import { Request, Response } from "express";
 export const createServiceProvided = async (req: Request, res: Response) => {
   try {
     const serviceProvided = await ServiceProvided.create({
-      serviceId: req.body.serviceId,
-      serviceOrderId: req.body.serviceOrderId,
+      service: req.body.service,
+      serviceOrder: req.body.serviceOrder,
       title: req.body.title,
       date: req.body.date,
       serviceCharge: req.body.serviceCharge,
@@ -38,21 +38,21 @@ export const createServiceProvided = async (req: Request, res: Response) => {
 
 export const getAllServiceProvided = async (req: Request, res: Response) => {
   try {
-    const { serviceOrderId, serviceId } = req.body;
+    const { serviceOrder, service } = req.body;
 
     const query: any = {};
 
-    if (serviceOrderId) {
-      query.serviceOrderId = serviceOrderId;
+    if (serviceOrder) {
+      query.serviceOrder = serviceOrder;
     }
 
-    if (serviceId) {
-      query.serviceId = serviceId;
+    if (service) {
+      query.service = service;
     }
 
     const servicesProvided = await ServiceProvided.find(query)
-      .populate({ path: "serviceId", select: "title serviceType" })
-      .populate({ path: "serviceOrderId" })
+      .populate({ path: "service", select: "title serviceType" })
+      .populate({ path: "serviceOrder" })
       .populate({ path: "products", select: "name brand" })
       .populate({ path: "parts", model: Parts })
       .populate({ path: "billing", model: Billing })
@@ -78,14 +78,14 @@ export const getServiceProvidedById = async (req: Request, res: Response) => {
   try {
     const serviceProvided = await ServiceProvided.findById(req.params.id)
       .populate({
-        path: "serviceId",
+        path: "service",
         populate: {
           path: "products",
           select:
             "-dimensions -weight -seo -user -costPrice -minimumOrderQuantity",
         },
       })
-      .populate({ path: "serviceOrderId" })
+      .populate({ path: "serviceOrder" })
       .populate({ path: "products", select: "-createdAt -updatedAt" })
       .populate({ path: "parts", select: "-createdAt -updatedAt" })
       .populate({ path: "billing", select: "-createdAt -updatedAt" });
@@ -111,8 +111,8 @@ export const updateServiceProvided = async (req: Request, res: Response) => {
     const updatedServiceProvided = await ServiceProvided.findByIdAndUpdate(
       req.params.id,
       {
-        serviceId: req.body.serviceId,
-        serviceOrderId: req.body.serviceOrderId,
+        service: req.body.service,
+        serviceOrder: req.body.serviceOrder,
         title: req.body.title,
         date: req.body.date,
         serviceCharge: req.body.serviceCharge,

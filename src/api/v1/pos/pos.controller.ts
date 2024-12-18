@@ -12,7 +12,7 @@ export const createPOS = async (req: Request, res: Response) => {
     const {
       products,
       parts,
-      services,
+      serviceOrders,
       customerType,
       customer,
       totalPrice,
@@ -26,12 +26,54 @@ export const createPOS = async (req: Request, res: Response) => {
       "pos"
     );
 
-    console.log("OrderId: ", orderId);
+    if (!order || !orderId) {
+      return apiError(res, 500, "Failed to create order");
+    }
+
+    let createdServiceOrders: any[] = [];
+    if (serviceOrders && serviceOrders.length > 0) {
+      const serviceOrdersData = await Promise.all(
+        serviceOrders.map(async (serviceOrder: any) => {
+          try {
+            const serviceDetails = await Service.findById(
+              serviceOrder.service
+            ).exec();
+
+            let nextServiceDate = null;
+            if (serviceDetails?.isRecurring && serviceDetails.interval) {
+              const intervalInDays = serviceDetails.interval;
+              nextServiceDate = new Date();
+              nextServiceDate.setDate(
+                nextServiceDate.getDate() + intervalInDays
+              );
+            }
+
+            return {
+              service: serviceOrder,
+              customer:
+                customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
+              date: serviceOrder.date,
+              nextServiceDate,
+              serviceCharge: serviceOrder.price,
+              orderId: orderId, // Link serviceOrder orders to the newly created Order
+              order: order,
+            };
+          } catch (error) {
+            console.error("Error processing serviceOrder order:", error);
+            throw new Error(
+              `Failed to process serviceOrder with ID: ${serviceOrder.service}`
+            );
+          }
+        })
+      );
+
+      createdServiceOrders = await ServiceOrder.insertMany(serviceOrdersData);
+    }
 
     const pos = await POS.create({
       products,
       parts,
-      services,
+      serviceOrders: createdServiceOrders,
       customerType: customerType || "walking",
       customer,
       totalPrice,
@@ -47,53 +89,10 @@ export const createPOS = async (req: Request, res: Response) => {
       return apiError(res, 400, "Failed to create POS record");
     }
 
-    // Step 3: Process service orders, if any
-    // let createdServiceOrders: any[] = [];
-    // if (services && services.length > 0) {
-    //   const serviceOrdersData = await Promise.all(
-    //     services.map(async (service: any) => {
-    //       try {
-    //         const serviceDetails = await Service.findById(
-    //           service.serviceId
-    //         ).exec();
-
-    //         // Calculate nextServiceDate if the service is recurring
-    //         let nextServiceDate = null;
-    //         if (serviceDetails?.isRecurring && serviceDetails.interval) {
-    //           const intervalInDays = serviceDetails.interval;
-    //           nextServiceDate = new Date();
-    //           nextServiceDate.setDate(
-    //             nextServiceDate.getDate() + intervalInDays
-    //           );
-    //         }
-
-    //         return {
-    //           serviceId: service.serviceId,
-    //           customerId:
-    //             customerType === "walking" ? WALKING_CUSTOMER_ID : customer,
-    //           date: service.date,
-    //           nextServiceDate,
-    //           serviceCharge: service.price,
-    //           orderId: order._id, // Link service orders to the newly created Order
-    //         };
-    //       } catch (error) {
-    //         console.error("Error processing service order:", error);
-    //         throw new Error(
-    //           `Failed to process service with ID: ${service.serviceId}`
-    //         );
-    //       }
-    //     })
-    //   );
-
-    //   // Insert service orders into the database
-    //   createdServiceOrders = await ServiceOrder.insertMany(serviceOrdersData);
-    // }
-
-    // Step 4: Return success response
     return apiResponse(res, 201, "POS record created successfully", {
       pos,
-      orderId: order.orderNo,
-      // createdServiceOrders,
+      orderId: order.orderId,
+      createdServiceOrders,
     });
   } catch (error: any) {
     console.error("Create POS error:", error.message);
@@ -124,7 +123,7 @@ export const getAllPOS = async (req: Request, res: Response) => {
     const posRecords = await POS.find(query)
       .populate("products.productId", "name price")
       .populate("parts.partId", "name price")
-      .populate("services.serviceId", "name price")
+      .populate("services.service", "name price")
       // .populate({
       //   path: "installations.installationId",
       //   select: "name price",
@@ -157,7 +156,7 @@ export const getPOSById = async (req: Request, res: Response) => {
     const pos = await POS.findById(id)
       .populate("products.productId", "name price")
       .populate("parts.partId", "name price")
-      .populate("services.serviceId", "name price")
+      .populate("services.service", "name price")
       // .populate("installations.installationId", "name price")
       .populate("customer", "name email");
 
@@ -184,7 +183,7 @@ export const updatePOS = async (req: Request, res: Response) => {
     })
       .populate("products.productId", "name price")
       .populate("parts.partId", "name price")
-      .populate("services.serviceId", "name price")
+      .populate("services.service", "name price")
       .populate("installations.installationId", "name price")
       .populate("customer", "name email");
 

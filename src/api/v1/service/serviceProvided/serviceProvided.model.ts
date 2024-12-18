@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
 const serviceProvidedSchema = new mongoose.Schema({
-  serviceId: {
+  service: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Service",
     required: true,
   },
-  serviceOrderId: {
+  serviceOrder: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "ServiceOrder",
     required: true,
@@ -42,13 +42,6 @@ const serviceProvidedSchema = new mongoose.Schema({
   additionalNotes: {
     type: String,
   },
-  billing: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Billing",
-      required: true,
-    },
-  ],
 });
 
 export default mongoose.model("ServiceProvided", serviceProvidedSchema);

@@ -8,18 +8,21 @@ const serviceSchema = new mongoose.Schema(
     },
     serviceType: {
       type: String,
+      enum: ["maintenance", "installation", "repair", "replacement"],
       required: true,
     },
     products: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Product",
+        required: false,
       },
     ],
     parts: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Part",
+        required: false,
       },
     ],
     workDetail: {
@@ -45,11 +48,6 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       enum: ["available", "unavailable"],
       default: "available",
-    },
-    orderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-      required: true,
     },
   },
   { timestamps: true }

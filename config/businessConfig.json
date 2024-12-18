@@ -1,8 +1,8 @@
 {
-  "businessName": "BMS",
+  "businessName": "99999988888",
   "address": "Kathmandu, Nepal",
-  "phone": "9818000000",
-  "email": "info@bms.com",
+  "phone": "984",
+  "email": "prajal2@gmail.com",
   "logo": "https://bms.com/logo.png",
   "favicon": "https://bms.com/favicon.ico",
   "currency": "NPR",
@@ -14,7 +14,7 @@
     "newOrder": {
       "enabled": true,
       "email": true,
-      "sms": true
+      "sms": false
     },
     "orderComplete": {
       "enabled": true,
@@ -25,7 +25,7 @@
       "enabled": true,
       "email": true,
       "sms": true,
-      "daysBefore": [0, 3, 7],
+      "daysBefore": 7,
       "notificationTime": "07:00"
     },
     "orderCancelled": {

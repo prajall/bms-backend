@@ -3,16 +3,23 @@ import ServiceOrder from "./serviceOrder.model";
 import ServiceProvided from "../serviceProvided/serviceProvided.model";
 import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
+import { createOrder } from "../../order/order.controller";
 
 export const createServiceOrder = async (req: Request, res: Response) => {
   try {
+    const { order } = req.body;
+
+    if (!order) {
+      createOrder(req.body.customer, "service");
+    }
+
     const serviceOrder = await ServiceOrder.create({
-      serviceId: req.body.serviceId,
-      // customerId: req.body.customerId,
-      // date: req.body.date,
+      service: req.body.service,
+      customer: req.body.customer,
+      date: req.body.date,
       recurring: req.body.recurring,
       nextServiceDate: req.body.nextServiceDate,
-      // serviceCharge: req.body.serviceCharge,
+      serviceCharge: req.body.serviceCharge,
       serviceProvided: req.body.serviceProvided,
     });
 
@@ -31,21 +38,19 @@ export const createServiceOrder = async (req: Request, res: Response) => {
     return apiError(res, 500, "Internal server error", error.message);
   }
 };
-
-// optional fields for filtering
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customerId } = req.body;
+    const { customer } = req.body;
 
     const query: any = {};
 
-    if (customerId) {
-      query.customerId = customerId;
+    if (customer) {
+      query.customer = customer;
     }
 
     const serviceOrders = await ServiceOrder.find(query)
-      .populate({ path: "serviceId", select: "-createdAt -updatedAt" })
-      .populate({ path: "customerId", select: "name phoneNo address" })
+      .populate({ path: "service", select: "-createdAt -updatedAt" })
+      .populate({ path: "customer", select: "name phoneNo address" })
       .populate({
         path: "serviceProvided",
         model: ServiceProvided,
@@ -69,7 +74,7 @@ export const getServiceOrderById = async (req: Request, res: Response) => {
   try {
     const serviceOrder = await ServiceOrder.findById(req.params.id)
       .populate({
-        path: "serviceId",
+        path: "service",
         select: "-createdAt -updatedAt",
         populate: {
           path: "products",
@@ -78,7 +83,7 @@ export const getServiceOrderById = async (req: Request, res: Response) => {
           strictPopulate: false,
         },
       })
-      .populate({ path: "customerId", select: "-createdAt -updatedAt" })
+      .populate({ path: "customer", select: "-createdAt -updatedAt" })
       .populate({
         path: "serviceProvided",
         model: ServiceProvided,
@@ -104,8 +109,8 @@ export const updateServiceOrder = async (req: Request, res: Response) => {
     const updatedServiceOrder = await ServiceOrder.findByIdAndUpdate(
       req.params.id,
       {
-        serviceId: req.body.serviceId,
-        customerId: req.body.customerId,
+        service: req.body.service,
+        customer: req.body.customer,
         date: req.body.date,
         recurring: req.body.recurring,
         nextServiceDate: req.body.nextServiceDate,

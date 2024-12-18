@@ -14,7 +14,7 @@ const posSchema = new mongoose.Schema(
     },
     products: [
       {
-        productId: {
+        product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Product",
           required: true,
@@ -33,7 +33,7 @@ const posSchema = new mongoose.Schema(
     ],
     parts: [
       {
-        partId: {
+        part: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Part",
           required: true,
@@ -50,43 +50,12 @@ const posSchema = new mongoose.Schema(
         },
       },
     ],
-    installation: {
-      type: {
-        installationId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProductInstallation",
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        additionalNotes: {
-          type: String,
-          maxlength: 1000,
-        },
-      },
-      required: false,
-    },
-    services: [
+    serviceOrders: [
       {
-        serviceId: {
+        serviceOrder: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Service",
+          ref: "ServiceOrder",
           required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        additionalNotes: {
-          type: String,
-          maxlength: 1000,
-        },
-        date: {
-          type: Date,
         },
       },
     ],

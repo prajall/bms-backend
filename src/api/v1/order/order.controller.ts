@@ -9,14 +9,13 @@ import posModel from "../pos/pos.model";
 const PREFIX_MAPPING: { [key: string]: string } = {
   service: "SRV",
   installation: "INS",
-  invoice: "INV",
   pos: "POS",
 };
 
 const MAX_RETRIES = 5;
 
 export const createOrder = async (
-  customerId: string,
+  customer: string,
   type: string,
   retries = 0
 ): Promise<{ orderId: string; order: any }> => {
@@ -29,8 +28,8 @@ export const createOrder = async (
       );
     }
 
-    if (!customerId || !mongoose.Types.ObjectId.isValid(customerId)) {
-      throw new Error("Invalid or missing customerId");
+    if (!customer || !mongoose.Types.ObjectId.isValid(customer)) {
+      throw new Error("Invalid or missing customer");
     }
 
     const orderId = await getorderId(type, prefix);
@@ -42,7 +41,7 @@ export const createOrder = async (
     const newOrder = new Order({
       orderId: orderId,
       date: new Date().toISOString(),
-      customerId: new mongoose.Types.ObjectId(customerId),
+      customer: new mongoose.Types.ObjectId(customer),
       type,
     });
 
@@ -57,7 +56,7 @@ export const createOrder = async (
       );
 
       if (retries < MAX_RETRIES) {
-        return createOrder(customerId, type, retries + 1); // Retry with incremented count
+        return createOrder(customer, type, retries + 1); // Retry with incremented count
       } else {
         console.error(
           "Max retries reached. Failed to create a unique order ID."
@@ -73,26 +72,24 @@ export const createOrder = async (
 
 export const fetchOrders = async (req: Request, res: Response) => {
   try {
-    const { customerId, orderId } = req.query; // Query parameters for search
+    const { customer, orderId } = req.query;
 
-    // Build filter object dynamically
     const filter: any = {};
 
-    if (customerId) {
-      if (!mongoose.Types.ObjectId.isValid(customerId as string)) {
-        return apiError(res, 400, "Invalid customerId");
+    if (customer) {
+      if (!mongoose.Types.ObjectId.isValid(customer as string)) {
+        return apiError(res, 400, "Invalid customer");
       }
-      filter.customerId = customerId;
+      filter.customer = customer;
     }
 
     if (orderId) {
-      filter.orderNo = orderId; // Assuming orderId is stored as 'orderNo' in Order model
+      filter.orderNo = orderId;
     }
 
-    // Fetch orders from the database
     const orders = await Order.find(filter)
-      .sort({ createdAt: -1 }) // Sort by latest orders
-      .populate("customerId", "name email phone") // Populate customer details if required
+      .sort({ createdAt: -1 })
+      .populate("customer", "name email phone")
       .lean();
 
     return apiResponse(res, 200, "Orders fetched successfully", { orders });
@@ -107,14 +104,12 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
   try {
     const { orderId } = req.params;
 
-    // Validate orderId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       return apiError(res, 400, "Invalid orderId");
     }
 
-    // Fetch the main order
     const order = await Order.findById(orderId)
-      .populate("customerId", "name email phone") // Populate customer details
+      .populate("customer", "name email phone")
       .lean();
 
     if (!order) {
@@ -134,7 +129,7 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       .populate("customer", "name email phone") // Populate customer details
       .populate("products.productId", "name price") // Populate product details
       .populate("parts.partId", "name price") // Populate part details
-      .populate("services.serviceId", "title serviceCharge") // Populate service details
+      .populate("services.service", "title serviceCharge") // Populate service details
       .lean();
 
     // Combine results

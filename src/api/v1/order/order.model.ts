@@ -7,7 +7,7 @@ const OrderSchema = new mongoose.Schema({
     unique: true,
     index: true,
   },
-  customerId: {
+  customer: {
     type: mongoose.Schema.ObjectId,
     ref: "Customer",
     required: true,

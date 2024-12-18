@@ -1,7 +1,7 @@
 import { body } from "express-validator";
 
 export const serviceOrderValidation = [
-  body("serviceId")
+  body("service")
     .notEmpty()
     .withMessage("Service ID is required")
     .isMongoId()

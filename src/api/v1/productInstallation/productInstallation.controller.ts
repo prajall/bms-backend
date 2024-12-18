@@ -7,8 +7,8 @@ export const createProductInstallation = async (
 ) => {
   try {
     const productInstallation = await ProductInstallation.create({
-      productId: req.body.productId,
-      customerId: req.body.customerId,
+      product: req.body.product,
+      customer: req.body.customer,
       installationDate: req.body.installationDate,
       status: req.body.status,
       address: req.body.address,
@@ -39,12 +39,12 @@ export const getAllProductInstallations = async (
   res: Response
 ) => {
   try {
-    const { customerId, status } = req.query;
+    const { customer, status } = req.query;
 
     const query: any = {};
 
-    if (customerId) {
-      query.customerId = customerId;
+    if (customer) {
+      query.customer = customer;
     }
 
     if (status) {
@@ -52,9 +52,9 @@ export const getAllProductInstallations = async (
     }
 
     const installations = await ProductInstallation.find(query)
-      .populate({ path: "productId", select: "name sku" })
-      .populate({ path: "customerId", select: "name phoneNo" })
-      .populate({ path: "addedServices", select: "serviceId date status" })
+      .populate({ path: "product", select: "name sku" })
+      .populate({ path: "customer", select: "name phoneNo" })
+      .populate({ path: "addedServices", select: "service date status" })
       .sort({ installationDate: -1 });
 
     return apiResponse(
@@ -75,9 +75,9 @@ export const getProductInstallationById = async (
 ) => {
   try {
     const installation = await ProductInstallation.findById(req.params.id)
-      .populate({ path: "productId", select: "name sku" })
-      .populate({ path: "customerId", select: "name phoneNo address" })
-      .populate({ path: "addedServices", select: "serviceId date status" });
+      .populate({ path: "product", select: "name sku" })
+      .populate({ path: "customer", select: "name phoneNo address" })
+      .populate({ path: "addedServices", select: "service date status" });
 
     if (!installation) {
       return apiError(res, 404, "Product installation not found");
@@ -103,8 +103,8 @@ export const updateProductInstallation = async (
     const updatedInstallation = await ProductInstallation.findByIdAndUpdate(
       req.params.id,
       {
-        productId: req.body.productId,
-        customerId: req.body.customerId,
+        product: req.body.product,
+        customer: req.body.customer,
         installationDate: req.body.installationDate,
         status: req.body.status,
         address: req.body.address,
