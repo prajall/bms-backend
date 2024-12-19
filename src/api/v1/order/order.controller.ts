@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Order from "./order.model"; // Adjust path to your model
-import { apiError, apiResponse } from "../../../utils/response.util"; // Reusable response handler
-import { getorderId } from "./order.function"; // Order number generator utility
-import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
-import posModel from "../pos/pos.model";
+import Order from "./order.model";
+import { apiError, apiResponse } from "../../../utils/response.util";
+import { getorderId } from "./order.function";
+import serviceOrder from "../service/serviceOrder/serviceOrder.model";
+import POSModel from "../pos/pos.model";
 
 const PREFIX_MAPPING: { [key: string]: string } = {
   service: "SRV",
@@ -20,7 +20,6 @@ export const createOrder = async (
   retries = 0
 ): Promise<{ orderId: string; order: any }> => {
   try {
-    // Validate type and get prefix
     const prefix = PREFIX_MAPPING[type.toLowerCase()];
     if (!prefix) {
       throw new Error(
@@ -56,7 +55,7 @@ export const createOrder = async (
       );
 
       if (retries < MAX_RETRIES) {
-        return createOrder(customer, type, retries + 1); // Retry with incremented count
+        return createOrder(customer, type, retries + 1);
       } else {
         console.error(
           "Max retries reached. Failed to create a unique order ID."
@@ -72,14 +71,11 @@ export const createOrder = async (
 
 export const fetchOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, orderId } = req.query;
+    const { customer, orderId } = req.body;
 
     const filter: any = {};
 
     if (customer) {
-      if (!mongoose.Types.ObjectId.isValid(customer as string)) {
-        return apiError(res, 400, "Invalid customer");
-      }
       filter.customer = customer;
     }
 
@@ -102,13 +98,13 @@ export const fetchOrders = async (req: Request, res: Response) => {
 // Fetch a single order with related service and POS orders
 export const fetchOrderDetails = async (req: Request, res: Response) => {
   try {
-    const { orderId } = req.params;
+    const { id } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return apiError(res, 400, "Invalid orderId");
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return apiError(res, 400, "Invalid id");
     }
 
-    const order = await Order.findById(orderId)
+    const order = await Order.findById(id)
       .populate("customer", "name email phone")
       .lean();
 
@@ -116,24 +112,36 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       return apiError(res, 404, "Order not found");
     }
 
-    // Fetch related service orders
-    const serviceOrders = await serviceOrderModel
-      .find({ orderId: order._id })
-      .populate("products", "name price") // Populate linked products
-      .populate("parts", "name price") // Populate linked parts
+    const serviceOrders = await serviceOrder
+      .find({ order: order._id })
+      .populate("products", "name price")
+      .populate("parts", "name price")
       .lean();
 
-    // Fetch related POS orders
-    const posOrders = await posModel
-      .find({ orderId: order._id })
-      .populate("customer", "name email phone") // Populate customer details
-      .populate("products.productId", "name price") // Populate product details
-      .populate("parts.partId", "name price") // Populate part details
-      .populate("services.service", "title serviceCharge") // Populate service details
+    const posOrders = await POSModel.find({ order: order._id })
+      .populate({
+        path: "customer",
+        select: "name email phone",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "products.productId",
+        select: "name price",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "parts.partId",
+        select: "name price",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "services.service",
+        select: "title serviceCharge",
+        strictPopulate: false,
+      })
       .lean();
 
-    // Combine results
-    const responseData = {
+    const orderDetails = {
       order,
       serviceOrders,
       posOrders,
@@ -143,7 +151,7 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       res,
       200,
       "Order details fetched successfully",
-      responseData
+      orderDetails
     );
   } catch (error: any) {
     console.error("Error fetching order details:", error.message);

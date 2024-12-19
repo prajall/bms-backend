@@ -1,8 +1,13 @@
 import express from "express";
-import { createOrder } from "./order.controller";
+import {
+  createOrder,
+  fetchOrderDetails,
+  fetchOrders,
+} from "./order.controller";
 
 const router = express.Router();
 
-router.post("/", createOrder);
+router.get("/", fetchOrders);
+router.get("/:id", fetchOrderDetails);
 
 export default router;

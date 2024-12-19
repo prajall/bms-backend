@@ -12,14 +12,6 @@ export const validateService = [
     .withMessage("Service type is required")
     .isString()
     .withMessage("Service type must be a string"),
-  body("products").isArray().withMessage("Products must be an array"),
-  body("products.*")
-    .isMongoId()
-    .withMessage("Each product must be a valid MongoDB ObjectId"),
-  body("parts").isArray().withMessage("parts must be an array"),
-  body("parts.*")
-    .isMongoId()
-    .withMessage("Each product must be a valid MongoDB ObjectId"),
   body("workDetail")
     .optional()
     .isString()
@@ -31,7 +23,13 @@ export const validateService = [
   body("interval")
     .optional()
     .isInt({ min: 1 })
-    .withMessage("Interval must be a positive integer"),
+    .withMessage("Interval must be a positive integer")
+    .custom((value, { req }) => {
+      if (req.body.isRecurring && !value) {
+        throw new Error("Interval is required when isRecurring is true");
+      }
+      return true;
+    }),
   body("serviceCharge")
     .notEmpty()
     .withMessage("Service charge is required")
@@ -45,12 +43,4 @@ export const validateService = [
     .optional()
     .isIn(["available", "unavailable"])
     .withMessage("Availability must be either 'available' or 'unavailable'"),
-  body("serviceProvided")
-    .optional()
-    .isArray()
-    .withMessage("ServiceProvided must be an array"),
-  body("serviceProvided.*")
-    .optional()
-    .isMongoId()
-    .withMessage("Each serviceProvided must be a valid MongoDB ObjectId"),
 ];

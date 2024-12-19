@@ -1,20 +1,30 @@
 import mongoose from "mongoose";
 const serviceOrderSchema = new mongoose.Schema(
   {
-    service: {
+    parentServiceOrder: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
-      required: true,
-      index: true,
+      ref: "ServiceOrder",
+      required: false,
+    },
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
     },
     orderId: {
       type: String,
       required: true,
       index: true,
     },
-    order: {
+    service: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
+      ref: "Service",
+      required: true,
+      index: true,
+    },
+    serviceType: {
+      type: String,
+      required: true,
+      default: "maintenance",
     },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +36,15 @@ const serviceOrderSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    isRecurring: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
+    interval: {
+      type: Number,
+      required: false,
+    },
     nextServiceDate: {
       type: Date,
       required: false,
@@ -33,6 +52,10 @@ const serviceOrderSchema = new mongoose.Schema(
     serviceCharge: {
       type: Number,
       required: true,
+    },
+    additionalNotes: {
+      type: String,
+      required: false,
     },
     status: {
       type: "string",

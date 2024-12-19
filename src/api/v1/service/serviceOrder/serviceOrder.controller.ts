@@ -4,24 +4,126 @@ import ServiceProvided from "../serviceProvided/serviceProvided.model";
 import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
+import Service from "../service/service.model";
+
+interface ServiceOrder {
+  order: string;
+  orderId: string;
+  isRecurring?: boolean;
+  customer: string;
+  service: string;
+  serviceType: string;
+  interval: number;
+  date: Date;
+  nextServiceDate?: Date;
+  serviceCharge: number;
+  parentServiceOrder?: string;
+  additionalNotes?: string;
+}
 
 export const createServiceOrder = async (req: Request, res: Response) => {
   try {
-    const { order } = req.body;
+    let {
+      order,
+      orderId,
+      isRecurring = false,
+      customer = "67554286140992b96228ae97", // Default "walking customer" ID
+      service,
+      serviceType = "service",
+      interval = 0,
+      date,
+      nextServiceDate,
+      serviceCharge,
+      parentServiceOrder,
+      additionalNotes,
+    } = req.body;
 
-    if (!order) {
-      createOrder(req.body.customer, "service");
+    // Validate service existence
+    const serviceOrderDoc = await Service.findById(service);
+    if (!serviceOrderDoc) {
+      return apiError(res, 400, "Service does not exist");
     }
 
-    const serviceOrder = await ServiceOrder.create({
-      service: req.body.service,
-      customer: req.body.customer,
-      date: req.body.date,
-      recurring: req.body.recurring,
-      nextServiceDate: req.body.nextServiceDate,
-      serviceCharge: req.body.serviceCharge,
-      serviceProvided: req.body.serviceProvided,
-    });
+    // Initialize new service order
+    const newServiceOrder: any = {
+      service,
+      serviceType,
+      customer,
+      date,
+      serviceCharge,
+      additionalNotes,
+      status: "pending",
+      orderId,
+      order,
+    };
+
+    // Create order if not provided
+    if (!order || !orderId) {
+      const newOrder = await createOrder(customer, "service");
+      if (!newOrder) {
+        return apiError(res, 500, "Failed to create order");
+      }
+      newServiceOrder.orderId = newOrder.orderId;
+      newServiceOrder.order = newOrder.order;
+    }
+
+    // Helper to calculate the next service date
+    const calculateNextServiceDate = () => {
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + interval);
+      return nextDate;
+    };
+
+    // Handle parent service orders
+    if (!parentServiceOrder && isRecurring) {
+      interval = interval || serviceOrderDoc.interval || 0;
+
+      // Ensure interval is valid
+      if (interval === 0) {
+        return apiError(res, 400, "Interval is required for recurring orders");
+      }
+
+      newServiceOrder.isRecurring = true;
+      newServiceOrder.interval = interval;
+      newServiceOrder.nextServiceDate =
+        nextServiceDate || calculateNextServiceDate();
+    }
+
+    // Handle child service orders
+    if (parentServiceOrder) {
+      const parentServiceOrderDoc = await ServiceOrder.findById(
+        parentServiceOrder
+      );
+
+      if (!parentServiceOrderDoc) {
+        return apiError(res, 400, "Parent service order does not exist");
+      }
+
+      newServiceOrder.parentServiceOrder = parentServiceOrder;
+
+      const childServiceOrder = await ServiceOrder.create(newServiceOrder);
+
+      if (!childServiceOrder) {
+        return apiError(res, 500, "Failed to create service order");
+      }
+
+      parentServiceOrderDoc.nextServiceDate = calculateNextServiceDate();
+      if (!isRecurring) {
+        parentServiceOrderDoc.isRecurring = false;
+      }
+
+      await parentServiceOrderDoc.save(); // No need for result check; exceptions handle errors
+
+      return apiResponse(
+        res,
+        201,
+        "Service order created successfully",
+        childServiceOrder
+      );
+    }
+
+    // Create parent service order
+    const serviceOrder = await ServiceOrder.create(newServiceOrder);
 
     if (!serviceOrder) {
       return apiError(res, 500, "Failed to create service order");
@@ -35,9 +137,10 @@ export const createServiceOrder = async (req: Request, res: Response) => {
     );
   } catch (error: any) {
     console.error("Error creating service order:", error);
-    return apiError(res, 500, "Internal server error", error.message);
+    return apiError(res, 500, "Internal server error", error.stack);
   }
 };
+
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
     const { customer } = req.body;
