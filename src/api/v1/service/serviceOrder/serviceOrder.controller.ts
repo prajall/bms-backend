@@ -276,21 +276,86 @@ export const deleteServiceOrder = async (req: Request, res: Response) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return apiError(res, 400, "Invalid service order ID");
     }
+    const parentServiceOrder = await ServiceOrder.findById(id);
+
+    if (!parentServiceOrder) {
+      return apiError(res, 404, "Parent service order not found");
+    }
+
+    const childServiceOrders = await ServiceOrder.find({
+      parentServiceOrder: id,
+    }).sort({ date: 1 });
+
+    if (childServiceOrders.length > 0) {
+      const firstChild = childServiceOrders[0];
+      firstChild.isRecurring = parentServiceOrder.isRecurring;
+      firstChild.nextServiceDate = parentServiceOrder.nextServiceDate;
+      firstChild.interval = parentServiceOrder.interval;
+
+      await firstChild.save();
+
+      // Update remaining children to point to the new parent
+      const remainingChildren = childServiceOrders.slice(1);
+      if (remainingChildren.length > 0) {
+        await ServiceOrder.updateMany(
+          { _id: { $in: remainingChildren.map((child) => child._id) } },
+          { parentServiceOrder: firstChild._id }
+        );
+      }
+    }
 
     const deletedServiceOrder = await ServiceOrder.findByIdAndDelete(id);
 
     if (!deletedServiceOrder) {
-      return apiError(res, 404, "Service order not found");
+      return apiError(res, 404, "Failed to delete parent service order");
     }
 
     return apiResponse(
       res,
       200,
-      "Service order deleted successfully",
+      "Parent service order deleted successfully",
       deletedServiceOrder
     );
   } catch (error: any) {
     console.error("Error deleting service order:", error);
+    return apiError(res, 500, "Internal server error", error.message);
+  }
+};
+
+export const getNextRecurringOrders = async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.body;
+
+    if (!endDate || isNaN(Date.parse(endDate))) {
+      return apiError(res, 400, "Invalid or missing end date");
+    }
+
+    const end = new Date(endDate);
+
+    const orders = await ServiceOrder.find({
+      isRecurring: true,
+      nextServiceDate: { $lte: end },
+    })
+      .populate({
+        path: "customer",
+        select: "name phoneNo address",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "service",
+        select: "title serviceType",
+        strictPopulate: false,
+      })
+      .sort({ nextServiceDate: 1 });
+
+    return apiResponse(
+      res,
+      200,
+      "Recurring orders retrieved successfully",
+      orders
+    );
+  } catch (error: any) {
+    console.error("Error fetching recurring orders to confirm:", error);
     return apiError(res, 500, "Internal server error", error.message);
   }
 };
