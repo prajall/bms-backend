@@ -5,6 +5,7 @@ import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
 import Service from "../service/service.model";
+import mongoose from "mongoose";
 
 interface ServiceOrder {
   order: string;
@@ -27,10 +28,10 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       order,
       orderId,
       isRecurring = false,
-      customer = "67554286140992b96228ae97", // Default "walking customer" ID
+      customer = "67554286140992b96228ae97",
       service,
-      serviceType = "service",
-      interval = 0,
+      serviceType = "maintenance",
+      interval,
       date,
       nextServiceDate,
       serviceCharge,
@@ -38,13 +39,11 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       additionalNotes,
     } = req.body;
 
-    // Validate service existence
     const serviceOrderDoc = await Service.findById(service);
     if (!serviceOrderDoc) {
       return apiError(res, 400, "Service does not exist");
     }
 
-    // Initialize new service order
     const newServiceOrder: any = {
       service,
       serviceType,
@@ -57,7 +56,6 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       order,
     };
 
-    // Create order if not provided
     if (!order || !orderId) {
       const newOrder = await createOrder(customer, "service");
       if (!newOrder) {
@@ -67,18 +65,15 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       newServiceOrder.order = newOrder.order;
     }
 
-    // Helper to calculate the next service date
     const calculateNextServiceDate = () => {
       const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + interval);
       return nextDate;
     };
 
-    // Handle parent service orders
     if (!parentServiceOrder && isRecurring) {
       interval = interval || serviceOrderDoc.interval || 0;
 
-      // Ensure interval is valid
       if (interval === 0) {
         return apiError(res, 400, "Interval is required for recurring orders");
       }
@@ -107,12 +102,17 @@ export const createServiceOrder = async (req: Request, res: Response) => {
         return apiError(res, 500, "Failed to create service order");
       }
 
-      parentServiceOrderDoc.nextServiceDate = calculateNextServiceDate();
       if (!isRecurring) {
         parentServiceOrderDoc.isRecurring = false;
+      } else {
+        parentServiceOrderDoc.isRecurring = true;
+        if (req.body.interval) {
+          parentServiceOrderDoc.interval = interval;
+        }
+        parentServiceOrderDoc.nextServiceDate = calculateNextServiceDate();
       }
 
-      await parentServiceOrderDoc.save(); // No need for result check; exceptions handle errors
+      await parentServiceOrderDoc.save();
 
       return apiResponse(
         res,
@@ -143,13 +143,19 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customer } = req.body;
+    const { customer, parentServiceOrder } = req.query;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
     const query: any = {};
-
     if (customer) {
       query.customer = customer;
     }
+    if (parentServiceOrder) {
+      query.parentServiceOrder = parentServiceOrder;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
 
     const serviceOrders = await ServiceOrder.find(query)
       .populate({ path: "service", select: "-createdAt -updatedAt" })
@@ -159,14 +165,18 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
         model: ServiceProvided,
         strictPopulate: false,
       })
-      .sort({ date: -1 });
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(Number(limit));
 
-    return apiResponse(
-      res,
-      200,
-      "Service orders retrieved successfully",
-      serviceOrders
-    );
+    const totalOrders = await ServiceOrder.countDocuments(query);
+
+    return apiResponse(res, 200, "Service orders retrieved successfully", {
+      serviceOrders,
+      totalOrders,
+      currentPage: Number(page),
+      totalPages: Math.ceil(totalOrders / Number(limit)),
+    });
   } catch (error: any) {
     console.error("Error retrieving service orders:", error);
     return apiError(res, 500, "Internal server error", error.message);
@@ -175,84 +185,112 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
 
 export const getServiceOrderById = async (req: Request, res: Response) => {
   try {
-    const serviceOrder = await ServiceOrder.findById(req.params.id)
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return apiError(res, 400, "Invalid service order ID");
+    }
+
+    const serviceOrder = await ServiceOrder.findById(id)
       .populate({
         path: "service",
         select: "-createdAt -updatedAt",
-        populate: {
-          path: "products",
-          select: "-createdAt -updatedAt",
-          model: Product,
-          strictPopulate: false,
-        },
       })
-      .populate({ path: "customer", select: "-createdAt -updatedAt" })
-      .populate({
-        path: "serviceProvided",
-        model: ServiceProvided,
-        strictPopulate: false,
-      });
+      .populate({ path: "customer", strictPopulate: false });
 
     if (!serviceOrder) {
-      return res.status(404).json({ message: "Service order not found" });
+      return apiError(res, 404, "Service order not found");
     }
 
-    return res.status(200).json({
-      message: "Service order retrieved successfully",
-      data: serviceOrder,
-    });
-  } catch (error) {
+    return apiResponse(
+      res,
+      200,
+      "Service order retrieved successfully",
+      serviceOrder
+    );
+  } catch (error: any) {
     console.error("Error retrieving service order:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return apiError(res, 500, "Internal server error", error.message);
   }
 };
 
 export const updateServiceOrder = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return apiError(res, 400, "Invalid service order ID");
+    }
+
+    const allowedUpdates = [
+      "order",
+      "orderId",
+      "service",
+      "serviceType",
+      "customer",
+      "date",
+      "isRecurring",
+      "interval",
+      "nextServiceDate",
+      "serviceCharge",
+      "additionalNotes",
+      "status",
+      "parentServiceOrder",
+    ];
+
+    const updates: any = {};
+    for (const key of Object.keys(req.body)) {
+      if (allowedUpdates.includes(key)) {
+        updates[key] = req.body[key];
+      }
+    }
+
     const updatedServiceOrder = await ServiceOrder.findByIdAndUpdate(
-      req.params.id,
+      id,
+      updates,
       {
-        service: req.body.service,
-        customer: req.body.customer,
-        date: req.body.date,
-        recurring: req.body.recurring,
-        nextServiceDate: req.body.nextServiceDate,
-        serviceCharge: req.body.serviceCharge,
-        serviceProvided: req.body.serviceProvided,
-      },
-      { new: true }
+        new: true,
+      }
     );
 
     if (!updatedServiceOrder) {
-      return res.status(404).json({ message: "Service order not found" });
+      return apiError(res, 404, "Service order not found");
     }
 
-    return res.status(200).json({
-      message: "Service order updated successfully",
-      data: updatedServiceOrder,
-    });
-  } catch (error) {
+    return apiResponse(
+      res,
+      200,
+      "Service order updated successfully",
+      updatedServiceOrder
+    );
+  } catch (error: any) {
     console.error("Error updating service order:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return apiError(res, 500, "Internal server error", error.message);
   }
 };
 
 export const deleteServiceOrder = async (req: Request, res: Response) => {
   try {
-    const deletedServiceOrder = await ServiceOrder.findByIdAndDelete(
-      req.params.id
-    );
+    const { id } = req.params;
 
-    if (!deletedServiceOrder) {
-      return res.status(404).json({ message: "Service order not found" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return apiError(res, 400, "Invalid service order ID");
     }
 
-    return res.status(200).json({
-      message: "Service order deleted successfully",
-      data: deletedServiceOrder,
-    });
-  } catch (error) {
+    const deletedServiceOrder = await ServiceOrder.findByIdAndDelete(id);
+
+    if (!deletedServiceOrder) {
+      return apiError(res, 404, "Service order not found");
+    }
+
+    return apiResponse(
+      res,
+      200,
+      "Service order deleted successfully",
+      deletedServiceOrder
+    );
+  } catch (error: any) {
     console.error("Error deleting service order:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return apiError(res, 500, "Internal server error", error.message);
   }
 };
