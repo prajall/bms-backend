@@ -13,7 +13,6 @@ interface ServiceOrder {
   isRecurring?: boolean;
   customer: string;
   service: string;
-  serviceType: string;
   interval: number;
   date: Date;
   nextServiceDate?: Date;
@@ -29,8 +28,9 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       orderId,
       isRecurring = false,
       customer = "67554286140992b96228ae97",
+      address,
+      contactNumber,
       service,
-      serviceType = "maintenance",
       interval,
       date,
       nextServiceDate,
@@ -46,8 +46,9 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
     const newServiceOrder: any = {
       service,
-      serviceType,
       customer,
+      address,
+      contactNumber,
       date,
       serviceCharge,
       additionalNotes,
@@ -226,8 +227,9 @@ export const updateServiceOrder = async (req: Request, res: Response) => {
       "order",
       "orderId",
       "service",
-      "serviceType",
       "customer",
+      "address",
+      "contactNumber",
       "date",
       "isRecurring",
       "interval",
@@ -343,7 +345,7 @@ export const getNextRecurringOrders = async (req: Request, res: Response) => {
       })
       .populate({
         path: "service",
-        select: "title serviceType",
+        select: "title",
         strictPopulate: false,
       })
       .sort({ nextServiceDate: 1 });

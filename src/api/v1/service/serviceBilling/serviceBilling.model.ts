@@ -11,11 +11,23 @@ const billingSchema = new mongoose.Schema(
       ref: "ServiceOrder",
       required: true,
     },
-    serviceProvided: {
-      // i think i will remove this. This schema is for every time service was provided. is this necessary? I want to link billing with serviceOrder. tell me what to do
+    orderId: {
+      type: String,
+      required: true,
+    },
+    order: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "ServiceProvided",
-      required: false,
+      ref: "Order",
+    },
+    date: {
+      type: Date,
+      required: true,
+      default: Date.now(),
+    },
+    status: {
+      type: String,
+      required: true,
+      default: "unpaid",
     },
     totalAmount: {
       type: Number,

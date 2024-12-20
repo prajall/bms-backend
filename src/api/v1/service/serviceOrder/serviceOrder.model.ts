@@ -21,11 +21,6 @@ const serviceOrderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    serviceType: {
-      type: String,
-      required: true,
-      default: "maintenance",
-    },
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
@@ -35,6 +30,14 @@ const serviceOrderSchema = new mongoose.Schema(
     date: {
       type: Date,
       required: true,
+    },
+    address: {
+      type: String,
+      required: false,
+    },
+    contactNumber: {
+      type: String,
+      required: false,
     },
     isRecurring: {
       type: Boolean,
@@ -63,6 +66,9 @@ const serviceOrderSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    /*
+    Add: assigned to (employee) , completed by (employee), created by (employee)
+    */
   },
   { timestamps: true }
 );
