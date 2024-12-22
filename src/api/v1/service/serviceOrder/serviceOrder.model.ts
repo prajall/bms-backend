@@ -77,7 +77,7 @@ const serviceOrderSchema = new mongoose.Schema(
     },
     remainingAmount: {
       type: Number,
-      required: true,
+      required: false,
     },
     /*
     Add: discount, assigned to (employee) , completed by (employee), created by (employee)

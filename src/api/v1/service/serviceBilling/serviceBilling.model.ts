@@ -9,7 +9,7 @@ const billingSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["serviceorder", "pos"],
+      enum: ["service", "pos"],
     },
     orderReference: {
       type: mongoose.Schema.Types.ObjectId,
@@ -45,11 +45,11 @@ const billingSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    previousDue: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
+    // previousDue: {
+    //   type: Number,
+    //   default: 0,
+    //   min: 0,
+    // },
     // remainingAmount: {
     //   type: Number,
     //   required: true,

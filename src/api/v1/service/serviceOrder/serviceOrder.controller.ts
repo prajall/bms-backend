@@ -6,6 +6,7 @@ import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
 import Service from "../service/service.model";
 import mongoose from "mongoose";
+import BillingModel from "../serviceBilling/serviceBilling.model";
 
 interface ServiceOrder {
   order: string;
@@ -22,6 +23,9 @@ interface ServiceOrder {
 }
 
 export const createServiceOrder = async (req: Request, res: Response) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     let {
       order,
@@ -32,16 +36,28 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       contactNumber,
       service,
       interval,
-      date,
       nextServiceDate,
       serviceCharge,
       parentServiceOrder,
       additionalNotes,
+      discount = 0,
+      paidAmount = 0,
     } = req.body;
 
     const serviceOrderDoc = await Service.findById(service);
     if (!serviceOrderDoc) {
       return apiError(res, 400, "Service does not exist");
+    }
+
+    const date = new Date().toISOString();
+    const discountedAmount = serviceCharge - (serviceCharge * discount) / 100;
+    const remainingAmount = discountedAmount - paidAmount;
+
+    let paymentStatus = "unpaid";
+    if (paidAmount >= discountedAmount) {
+      paymentStatus = "paid";
+    } else if (paidAmount > 0) {
+      paymentStatus = "partial";
     }
 
     const newServiceOrder: any = {
@@ -55,6 +71,8 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       status: "pending",
       orderId,
       order,
+      paymentStatus,
+      remainingAmount,
     };
 
     if (!order || !orderId) {
@@ -85,58 +103,52 @@ export const createServiceOrder = async (req: Request, res: Response) => {
         nextServiceDate || calculateNextServiceDate();
     }
 
-    // Handle child service orders
-    if (parentServiceOrder) {
-      const parentServiceOrderDoc = await ServiceOrder.findById(
-        parentServiceOrder
-      );
-
-      if (!parentServiceOrderDoc) {
-        return apiError(res, 400, "Parent service order does not exist");
-      }
-
-      newServiceOrder.parentServiceOrder = parentServiceOrder;
-
-      const childServiceOrder = await ServiceOrder.create(newServiceOrder);
-
-      if (!childServiceOrder) {
-        return apiError(res, 500, "Failed to create service order");
-      }
-
-      if (!isRecurring) {
-        parentServiceOrderDoc.isRecurring = false;
-      } else {
-        parentServiceOrderDoc.isRecurring = true;
-        if (req.body.interval) {
-          parentServiceOrderDoc.interval = interval;
-        }
-        parentServiceOrderDoc.nextServiceDate = calculateNextServiceDate();
-      }
-
-      await parentServiceOrderDoc.save();
-
-      return apiResponse(
-        res,
-        201,
-        "Service order created successfully",
-        childServiceOrder
-      );
-    }
-
-    // Create parent service order
-    const serviceOrder = await ServiceOrder.create(newServiceOrder);
+    const serviceOrder = await ServiceOrder.create([newServiceOrder], {
+      session,
+    });
 
     if (!serviceOrder) {
+      await session.abortTransaction();
       return apiError(res, 500, "Failed to create service order");
     }
+
+    if (paidAmount) {
+      const billing = await BillingModel.create(
+        [
+          {
+            customer,
+            type: "service",
+            orderReference: serviceOrder[0]._id,
+            order: newServiceOrder.order,
+            orderId: newServiceOrder.orderId,
+            date,
+            serviceOrder: serviceOrder[0]._id,
+            totalAmount: serviceCharge,
+            paidAmount,
+            status: paymentStatus,
+          },
+        ],
+        { session }
+      );
+      console.log("billing", billing[0]);
+      if (!billing) {
+        await session.abortTransaction();
+        return apiError(res, 500, "Failed to create billing");
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return apiResponse(
       res,
       201,
       "Service order created successfully",
-      serviceOrder
+      serviceOrder[0]
     );
   } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error creating service order:", error);
     return apiError(res, 500, "Internal server error", error.stack);
   }
