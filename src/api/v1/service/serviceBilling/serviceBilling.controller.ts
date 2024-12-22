@@ -6,23 +6,23 @@ import { apiError, apiResponse } from "../../../../utils/response.util";
 export const createBilling = async (req: Request, res: Response) => {
   const {
     customer,
-    serviceOrder,
-    serviceProvided,
+    type,
+    order,
+    orderReference,
     totalAmount,
     paidAmount = 0,
-    previousDue = 0,
-    remainingAmount = 0,
+    // previousDue = 0,
+    // remainingAmount = 0,
   } = req.body;
 
   try {
     const newBilling = await Billing.create({
       customer,
-      serviceOrder,
-      serviceProvided,
+      orderReference,
       totalAmount,
       paidAmount,
-      previousDue,
-      remainingAmount,
+      // previousDue,
+      // remainingAmount,
     });
 
     if (!newBilling) {
@@ -110,7 +110,7 @@ export const updateBilling = async (req: Request, res: Response) => {
     billing.totalAmount = totalAmount;
     billing.paidAmount = paidAmount;
     billing.previousDue = previousDue;
-    billing.remainingAmount = remainingAmount;
+    // billing.remainingAmount = remainingAmount;
 
     await billing.save();
 

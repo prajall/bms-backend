@@ -6,9 +6,14 @@ const billingSchema = new mongoose.Schema(
       ref: "Customer",
       required: true,
     },
-    serviceOrder: {
+    type: {
+      type: String,
+      required: true,
+      enum: ["serviceorder", "pos"],
+    },
+    orderReference: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "ServiceOrder",
+      refPath: "type",
       required: true,
     },
     orderId: {
@@ -45,11 +50,11 @@ const billingSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    remainingAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    // remainingAmount: {
+    //   type: Number,
+    //   required: true,
+    //   min: 0,
+    // },
   },
   { timestamps: true }
 );

@@ -66,8 +66,21 @@ const serviceOrderSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    paymentStatus: {
+      type: "string",
+      default: "pending",
+      index: true,
+    },
+    discount: {
+      type: Number,
+      required: false,
+    },
+    remainingAmount: {
+      type: Number,
+      required: true,
+    },
     /*
-    Add: assigned to (employee) , completed by (employee), created by (employee)
+    Add: discount, assigned to (employee) , completed by (employee), created by (employee)
     */
   },
   { timestamps: true }

@@ -10,11 +10,25 @@ import {
   updateEmployee,
 } from "./employee.controller";
 import { handleValidation } from "../../../middlewares/validation.middleware";
+import { checkPermission } from "../../../middlewares/permissions.middleware";
+import { authValidation } from "../../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", employeeValidation, handleValidation, createEmployee);
-router.get("/", getAllEmployees);
+router.post(
+  "/",
+  authValidation,
+  checkPermission("employee", "add"),
+  employeeValidation,
+  handleValidation,
+  createEmployee
+);
+router.get(
+  "/",
+  authValidation,
+  checkPermission("employee", "view"),
+  getAllEmployees
+);
 router.get("/:id", getEmployeeDetails);
 router.patch(
   "/:id",

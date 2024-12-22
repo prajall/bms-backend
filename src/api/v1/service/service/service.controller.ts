@@ -64,7 +64,7 @@ export const getAllServices = async (req: Request, res: Response) => {
 
 export const getServiceById = async (req: Request, res: Response) => {
   try {
-    const service = await Service.findById(req.params.id).populate("products");
+    const service = await Service.findById(req.params.id);
 
     if (!service) {
       return apiError(res, 404, "Service not found");

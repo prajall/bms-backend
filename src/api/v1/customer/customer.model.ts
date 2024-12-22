@@ -7,6 +7,7 @@ const customerSchema = new Schema(
       ref: "User",
       required: true,
       default: "673f15dd1f67e9ecdadaf39d",
+      index: true,
     },
     name: {
       type: String,

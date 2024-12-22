@@ -1,7 +1,7 @@
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import ServiceProvided from "./serviceProvided.model";
 import Parts from "../../items/parts/parts.model";
-import Billing from "../serviceBilling/serviceBilling.model";
+import Billing from "../../billing/billing.model";
 
 import { Request, Response } from "express";
 
