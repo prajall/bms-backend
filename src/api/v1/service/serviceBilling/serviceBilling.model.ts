@@ -11,7 +11,7 @@ const billingSchema = new mongoose.Schema(
       required: true,
       enum: ["service", "pos"],
     },
-    orderReference: {
+    serviceOrder: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "type",
       required: true,

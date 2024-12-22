@@ -118,11 +118,10 @@ export const createServiceOrder = async (req: Request, res: Response) => {
           {
             customer,
             type: "service",
-            orderReference: serviceOrder[0]._id,
+            serviceOrder: serviceOrder[0]._id,
             order: newServiceOrder.order,
             orderId: newServiceOrder.orderId,
             date,
-            serviceOrder: serviceOrder[0]._id,
             totalAmount: serviceCharge,
             paidAmount,
             status: paymentStatus,
@@ -215,12 +214,24 @@ export const getServiceOrderById = async (req: Request, res: Response) => {
       return apiError(res, 404, "Service order not found");
     }
 
-    return apiResponse(
-      res,
-      200,
-      "Service order retrieved successfully",
-      serviceOrder
+    const previousBillings = await BillingModel.find({
+      serviceOrder: serviceOrder,
+    });
+
+    const totalPaid = previousBillings.reduce(
+      (sum, billing) => sum + billing.paidAmount,
+      0
     );
+    const remainingAmount = serviceOrder.serviceCharge - totalPaid;
+    if (remainingAmount != serviceOrder.remainingAmount) {
+      serviceOrder.remainingAmount = remainingAmount;
+      await serviceOrder.save();
+    }
+
+    return apiResponse(res, 200, "Service order retrieved successfully", {
+      serviceOrder,
+      previousBillings,
+    });
   } catch (error: any) {
     console.error("Error retrieving service order:", error);
     return apiError(res, 500, "Internal server error", error.message);
