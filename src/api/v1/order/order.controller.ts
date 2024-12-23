@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import Order from "./order.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
 import { getorderId } from "./order.function";
-import serviceOrder from "../service/serviceOrder/serviceOrder.model";
+import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import POSModel from "../pos/pos.model";
 
 const PREFIX_MAPPING: { [key: string]: string } = {
@@ -71,7 +71,7 @@ export const createOrder = async (
 
 export const fetchOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, orderId } = req.body;
+    const { customer, orderId, startDate, endDate } = req.query;
 
     const filter: any = {};
 
@@ -80,15 +80,54 @@ export const fetchOrders = async (req: Request, res: Response) => {
     }
 
     if (orderId) {
-      filter.orderNo = orderId;
+      filter.orderId = orderId;
+    }
+    if (startDate) {
+      filter.createdAt = {
+        ...filter.createdAt,
+        $gte: new Date(startDate.toString()),
+      };
+    }
+    if (endDate) {
+      filter.createdAt = {
+        ...filter.createdAt,
+        $lte: new Date(endDate.toString()),
+      };
     }
 
+    // Fetch orders
     const orders = await Order.find(filter)
       .sort({ createdAt: -1 })
       .populate("customer", "name email phone")
       .lean();
 
-    return apiResponse(res, 200, "Orders fetched successfully", { orders });
+    if (orders.length === 0) {
+      return apiResponse(res, 404, "No orders found");
+    }
+
+    // Fetch associated serviceOrders for each order
+    const orderIds = orders.map((order: any) => order._id);
+
+    const serviceOrders = await ServiceOrder.find({
+      order: { $in: orderIds },
+    })
+      .select("-__v") // Select or exclude fields if needed
+      .lean();
+
+    // Map serviceOrders to their respective orders
+    const ordersWithServiceOrders = orders.map((order: any) => {
+      order.serviceOrders = serviceOrders.filter(
+        (so: any) => so.order.toString() === order._id.toString()
+      );
+      return order;
+    });
+
+    return apiResponse(
+      res,
+      200,
+      "Orders fetched successfully",
+      ordersWithServiceOrders
+    );
   } catch (error: any) {
     console.error("Error fetching orders:", error.message);
     return apiError(res, 500, "Internal Server Error");
@@ -112,8 +151,7 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       return apiError(res, 404, "Order not found");
     }
 
-    const serviceOrders = await serviceOrder
-      .find({ order: order._id })
+    const serviceOrders = await ServiceOrder.find({ order: order._id })
       .populate("products", "name price")
       .populate("parts", "name price")
       .lean();

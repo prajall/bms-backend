@@ -1,4 +1,4 @@
-import { body, validationResult } from "express-validator";
+import { body } from "express-validator";
 
 export const validateBilling = [
   body("customer")
@@ -21,14 +21,4 @@ export const validateBilling = [
     .withMessage("Paid amount must be a positive number")
     .notEmpty()
     .withMessage("Paid amount is required"),
-  body("previousDue")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Previous due must be a positive number"),
-  body("remainingAmount")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Remaining amount must be a positive number")
-    .notEmpty()
-    .withMessage("Remaining amount is required"),
 ];

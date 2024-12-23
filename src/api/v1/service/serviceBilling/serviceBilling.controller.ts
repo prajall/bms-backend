@@ -9,6 +9,9 @@ export const createBilling = async (req: Request, res: Response) => {
   const paidAmount = parseInt(req.body.paidAmount.toString()) || 0;
 
   try {
+    if (paidAmount <= 0) {
+      return apiError(res, 400, "Paid amount must be greater than 0");
+    }
     const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder);
 
     if (!serviceOrderDoc) {
@@ -69,7 +72,11 @@ export const createBilling = async (req: Request, res: Response) => {
 };
 
 export const getBillings = async (req: Request, res: Response) => {
-  const { serviceOrder, customerId, orderId, order } = req.query;
+  const { serviceOrder, customerId, orderId, order } = req.body;
+
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
 
   try {
     let filter: any = {};
@@ -99,10 +106,20 @@ export const getBillings = async (req: Request, res: Response) => {
           "orderId order serviceCharge discount service status paymentStatus ",
         populate: { path: "service", select: "name " },
       })
+      .skip(skip)
+      .limit(limit)
       .sort({ createdAt: -1 })
       .exec();
 
-    return apiResponse(res, 200, "Billings fetched successfully", billings);
+    const totalBillings = await Billing.countDocuments(filter);
+    const totalPages = Math.ceil(totalBillings / limit);
+
+    return apiResponse(res, 200, "Billings fetched successfully", {
+      billings,
+      totalBillings,
+      currentPage: page,
+      totalPages,
+    });
   } catch (error: any) {
     console.error("Error fetching billings:", error);
     return apiError(res, 500, "Error fetching billings", error.message);
