@@ -103,9 +103,45 @@ export const createServiceOrder = async (req: Request, res: Response) => {
         nextServiceDate || calculateNextServiceDate();
     }
 
-    const serviceOrder = await ServiceOrder.create([newServiceOrder], {
-      session,
-    });
+    let serviceOrder: any;
+
+    //handle child service orders
+    if (parentServiceOrder) {
+      const parentServiceOrderDoc = await ServiceOrder.findById(
+        parentServiceOrder
+      );
+
+      if (!parentServiceOrderDoc) {
+        return apiError(res, 400, "Parent service order does not exist");
+      }
+
+      newServiceOrder.parentServiceOrder = parentServiceOrder;
+
+      serviceOrder = await ServiceOrder.create([newServiceOrder], {
+        session,
+      });
+
+      if (!serviceOrder) {
+        await session.abortTransaction();
+        return apiError(res, 500, "Failed to create service order");
+      }
+
+      if (!isRecurring) {
+        parentServiceOrderDoc.isRecurring = false;
+      } else {
+        parentServiceOrderDoc.isRecurring = true;
+        if (req.body.interval) {
+          parentServiceOrderDoc.interval = interval;
+        }
+        parentServiceOrderDoc.nextServiceDate = calculateNextServiceDate();
+      }
+
+      await parentServiceOrderDoc.save();
+    } else {
+      serviceOrder = await ServiceOrder.create([newServiceOrder], {
+        session,
+      });
+    }
 
     if (!serviceOrder) {
       await session.abortTransaction();
@@ -113,6 +149,15 @@ export const createServiceOrder = async (req: Request, res: Response) => {
     }
 
     if (paidAmount) {
+      if (!serviceOrder || !serviceOrder[0]?._id) {
+        await session.abortTransaction();
+        return apiError(
+          res,
+          500,
+          "Failed to create service order, billing aborted"
+        );
+      }
+
       const billing = await BillingModel.create(
         [
           {
@@ -150,6 +195,8 @@ export const createServiceOrder = async (req: Request, res: Response) => {
     session.endSession();
     console.error("Error creating service order:", error);
     return apiError(res, 500, "Internal server error", error.stack);
+  } finally {
+    session.endSession();
   }
 };
 
