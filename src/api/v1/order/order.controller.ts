@@ -5,6 +5,7 @@ import { apiError, apiResponse } from "../../../utils/response.util";
 import { getorderId } from "./order.function";
 import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import POSModel from "../pos/pos.model";
+import ServiceBilling from "../service/serviceBilling/serviceBilling.model";
 
 const PREFIX_MAPPING: { [key: string]: string } = {
   service: "SRV",
@@ -151,10 +152,7 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       return apiError(res, 404, "Order not found");
     }
 
-    const serviceOrders = await ServiceOrder.find({ order: order._id })
-      .populate("products", "name price")
-      .populate("parts", "name price")
-      .lean();
+    const serviceOrders = await ServiceOrder.find({ order: order._id });
 
     const posOrders = await POSModel.find({ order: order._id })
       .populate({
@@ -179,10 +177,13 @@ export const fetchOrderDetails = async (req: Request, res: Response) => {
       })
       .lean();
 
+    const billings = await ServiceBilling.find({ order: order._id });
+
     const orderDetails = {
       order,
       serviceOrders,
       posOrders,
+      billings,
     };
 
     return apiResponse(
