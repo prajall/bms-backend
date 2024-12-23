@@ -5,12 +5,11 @@ import serviceOrderModel from "../serviceOrder/serviceOrder.model";
 
 // Create a billing record
 export const createBilling = async (req: Request, res: Response) => {
-  const { serviceOrder, paidAmount = 0 } = req.body;
+  const { serviceOrder } = req.body;
+  const paidAmount = parseInt(req.body.paidAmount.toString()) || 0;
 
   try {
-    const serviceOrderDoc = await serviceOrderModel
-      .findById(serviceOrder)
-      .populate("customer");
+    const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder);
 
     if (!serviceOrderDoc) {
       return apiError(res, 404, "Service order not found");
@@ -29,16 +28,9 @@ export const createBilling = async (req: Request, res: Response) => {
       (serviceOrderDoc.discount || 0) * (serviceOrderDoc.serviceCharge / 100);
     const remainingAmount = totalAmount - totalPaid;
 
-    if (paidAmount > remainingAmount) {
-      return apiError(
-        res,
-        400,
-        `Paid amount exceeds the remaining amount. Remaining: ${remainingAmount}`
-      );
-    }
-
     // Calculate the new payment status
     const updatedTotalPaid = totalPaid + paidAmount;
+    console.log("updatedTotalPaid", updatedTotalPaid, "total paid", totalPaid);
     let paymentStatus = "unpaid";
     if (updatedTotalPaid >= serviceOrderDoc.serviceCharge) {
       paymentStatus = "paid";
@@ -56,6 +48,7 @@ export const createBilling = async (req: Request, res: Response) => {
       date: new Date(),
       totalAmount: serviceOrderDoc.serviceCharge,
       paidAmount,
+      totalPaid: updatedTotalPaid,
       remainingAmount: remainingAmount - paidAmount,
       status: paymentStatus,
     });
@@ -76,7 +69,7 @@ export const createBilling = async (req: Request, res: Response) => {
 };
 
 export const getBillings = async (req: Request, res: Response) => {
-  const { serviceOrder, serviceProvided, customerId } = req.query;
+  const { serviceOrder, customerId, orderId, order } = req.query;
 
   try {
     let filter: any = {};
@@ -87,26 +80,27 @@ export const getBillings = async (req: Request, res: Response) => {
     if (serviceOrder) {
       filter.serviceOrder = serviceOrder;
     }
-
-    if (serviceProvided) {
-      filter.serviceProvided = serviceProvided;
+    if (orderId) {
+      filter.orderId = orderId;
+    }
+    if (order) {
+      filter.order = order;
     }
 
     const billings = await Billing.find(filter)
       .populate({
-        path: "customer serviceOrder serviceProvided",
-        strictPopulate: false,
+        path: "customer",
+        select: "name user _id ",
+        populate: { path: "user", select: "email _id" },
+      })
+      .populate({
+        path: "serviceOrder",
+        select:
+          "orderId order serviceCharge discount service status paymentStatus ",
+        populate: { path: "service", select: "name " },
       })
       .sort({ createdAt: -1 })
       .exec();
-
-    // if (!billings.length) {
-    //   return apiError(
-    //     res,
-    //     404,
-    //     "No billings found for this customer with the specified filters"
-    //   );
-    // }
 
     return apiResponse(res, 200, "Billings fetched successfully", billings);
   } catch (error: any) {
@@ -120,7 +114,8 @@ export const getBillingById = async (req: Request, res: Response) => {
 
   try {
     const billing = await Billing.findById(billingId)
-      .populate("customer serviceOrder serviceProvided")
+      .populate("customer serviceOrder")
+
       .exec();
 
     if (!billing) {
@@ -136,7 +131,7 @@ export const getBillingById = async (req: Request, res: Response) => {
 
 export const updateBilling = async (req: Request, res: Response) => {
   const { billingId } = req.params;
-  const { totalAmount, paidAmount, previousDue, remainingAmount } = req.body;
+  const { totalAmount, paidAmount } = req.body;
 
   try {
     const billing = await Billing.findById(billingId);
@@ -146,9 +141,8 @@ export const updateBilling = async (req: Request, res: Response) => {
     }
 
     // Update values
-    billing.totalAmount = totalAmount;
-    billing.paidAmount = paidAmount;
-    // billing.remainingAmount = remainingAmount;
+    billing.totalAmount = totalAmount || billing.totalAmount;
+    billing.paidAmount = paidAmount || billing.paidAmount;
 
     await billing.save();
 

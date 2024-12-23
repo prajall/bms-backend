@@ -6,14 +6,9 @@ const billingSchema = new mongoose.Schema(
       ref: "Customer",
       required: true,
     },
-    type: {
-      type: String,
-      required: true,
-      enum: ["service", "pos"],
-    },
     serviceOrder: {
       type: mongoose.Schema.Types.ObjectId,
-      refPath: "type",
+      ref: "ServiceOrder",
       required: true,
     },
     orderId: {
@@ -42,6 +37,11 @@ const billingSchema = new mongoose.Schema(
     paidAmount: {
       type: Number,
       required: true,
+      default: 0,
+      min: 0,
+    },
+    totalPaid: {
+      type: Number,
       default: 0,
       min: 0,
     },
