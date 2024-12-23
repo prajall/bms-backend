@@ -1,13 +1,13 @@
 import { body } from "express-validator";
 
 export const productInstallationValidation = [
-  body("productId")
+  body("product")
     .notEmpty()
     .withMessage("Product ID is required")
     .isMongoId()
     .withMessage("Invalid Product ID format"),
 
-  body("customerId")
+  body("customer")
     .notEmpty()
     .withMessage("Customer ID is required")
     .isMongoId()

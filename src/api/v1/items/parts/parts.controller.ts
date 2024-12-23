@@ -109,7 +109,7 @@ export const getPartsMiniList = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalParts / limit);
 
     const parts = await Part.find(query)
-      .select("name modelNo")
+      .select("name modelNo sellingPrice baseImage")
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);

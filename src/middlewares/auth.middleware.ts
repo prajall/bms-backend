@@ -17,7 +17,7 @@ export const authValidation = async (
     const token = req.cookies?.token;
 
     if (!token) {
-      return apiError(res, 401, "Authorization token not found");
+      return apiError(res, 401, "Authentication failed. Please Login first");
     }
 
     const decoded = jwt.verify(
@@ -25,7 +25,9 @@ export const authValidation = async (
       process.env.JWT_SECRET || ""
     ) as JwtPayload;
 
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id)
+      .select("-password")
+      .populate("role");
 
     if (!user) {
       return apiError(res, 404, "User not found");

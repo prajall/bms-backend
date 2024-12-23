@@ -173,46 +173,56 @@ export const getUserInfo = async (req: Request, res: Response) => {
 //   }
 // };
 
-// export const updateUserRole = async (req: Request, res: Response) => {
-//   const { newRole } = req.body;
-//   const userIdToUpdate = req.params.userId;
-//   console.log("userIdToUpdate", userIdToUpdate);
-//   const user = req.user;
+export const updateUserRole = async (req: Request, res: Response) => {
+  const { newRoleId } = req.body;
+  const { id: userIdToUpdate } = req.params;
+  const user = req.user; // Current logged-in user
 
-//   try {
-//     console.log("user update");
-//     if (!user) {
-//       return res.status(404).json({ message: "No user. Please Login" });
-//     }
+  try {
+    console.log("User to update", userIdToUpdate);
+    console.log("New role", newRoleId);
+    // Validate the new role
+    const newRole = await Role.findById(newRoleId);
+    console.log(newRole);
+    if (!newRole) {
+      return apiError(res, 400, "Invalid role specified.");
+    }
 
-//     const newRoleDocs = await Role.findOne({ name: newRole });
+    // Prevent assigning the "master" role
+    if (newRole.name === "master") {
+      return apiError(res, 400, "Cannot assign the Master role.");
+    }
 
-//     if (!newRoleDocs) {
-//       return res.status(400).json({ message: "Invalid role specified" });
-//     }
-//     if (newRoleDocs.name === "Master") {
-//       return res.status(403).json({ message: "Cannot assign Master role" });
-//     }
+    const userToUpdate = await User.findById(userIdToUpdate)
+      .select("-password")
+      .populate({ path: "role", select: "name permissions" });
 
-//     const userDoc = await User.findById(userIdToUpdate).select("-password");
-//     if (!userDoc) {
-//       return res.status(404).json({ message: "User to Update not found" });
-//     }
+    if (!userToUpdate) {
+      return apiError(res, 404, "User to update not found.");
+    }
 
-//     if (userDoc.role === "Admin" && user.role != "Master") {
-//       return res.status(403).json({
-//         message: "Access Denied. Only master can change Admin's role",
-//       });
-//     }
+    // Only "master" can change an "admin" role
+    if (
+      //@ts-ignore
+      userToUpdate.role?.name?.toLowerCase() === "admin" &&
+      user.role?.name?.toLowerCase() !== "master"
+    ) {
+      return apiError(
+        res,
+        403,
+        "Access Denied. Only a Master can change an Admin's role."
+      );
+    }
 
-//     userDoc.role = newRoleDocs.name;
-//     userDoc.roleId = newRoleDocs._id;
+    // Update the user's role
+    userToUpdate.role = newRole._id;
+    await userToUpdate.save();
 
-//     await userDoc.save();
-
-//     return res.status(200).json(userDoc);
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ message: "Internal Server Error", error });
-//   }
-// };
+    return apiResponse(res, 200, "User role updated successfully.", {
+      user: userToUpdate,
+    });
+  } catch (error: any) {
+    console.error("Error updating user role:", error);
+    return apiError(res, 500, "Internal Server Error", error.message);
+  }
+};

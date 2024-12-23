@@ -50,29 +50,29 @@ export const validatePOS = [
     .withMessage("Part price must be a positive number"),
 
   // Validate services array
-  body("services")
-    .optional()
-    .isArray()
-    .withMessage("Services must be an array"),
-  body("services.*.serviceId")
-    .notEmpty()
-    .withMessage("Service ID is required")
-    .isMongoId()
-    .withMessage("Invalid service ID"),
-  body("services.*.price")
-    .notEmpty()
-    .withMessage("Service price is required")
-    .isFloat({ min: 0 })
-    .withMessage("Service price must be a positive number"),
-  body("services.*.additionalNotes")
-    .optional()
-    .isString()
-    .isLength({ max: 1000 })
-    .withMessage("Additional notes must not exceed 1000 characters"),
-  body("services.*.date")
-    .optional()
-    .isISO8601()
-    .withMessage("Invalid date format"),
+  // body("services")
+  //   .optional()
+  //   .isArray()
+  //   .withMessage("Services must be an array"),
+  // body("services.*.serviceId")
+  //   .notEmpty()
+  //   .withMessage("Service ID is required")
+  //   .isMongoId()
+  //   .withMessage("Invalid service ID"),
+  // body("services.*.price")
+  //   .notEmpty()
+  //   .withMessage("Service price is required")
+  //   .isFloat({ min: 0 })
+  //   .withMessage("Service price must be a positive number"),
+  // body("services.*.additionalNotes")
+  //   .optional()
+  //   .isString()
+  //   .isLength({ max: 1000 })
+  //   .withMessage("Additional notes must not exceed 1000 characters"),
+  // body("services.*.date")
+  //   .optional()
+  //   .isISO8601()
+  //   .withMessage("Invalid date format"),
 
   // Validate installations array
   body("installations")
@@ -101,4 +101,22 @@ export const validatePOS = [
     .withMessage("Total price is required")
     .isFloat({ min: 0 })
     .withMessage("Total price must be a positive number"),
+
+  // Validate discount
+  body("discount")
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage("Discount must be between 0 and 100"),
+
+  // Validate paymentMethod
+  body("subTotal")
+    .notEmpty()
+    .withMessage("Subtotal is required")
+    .isFloat({ min: 0 })
+    .withMessage("Subtotal must be a positive number"),
+
+  body("tax")
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage("Tax must be between 0 and 100"),
 ];

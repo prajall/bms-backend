@@ -5,12 +5,16 @@ import {
   getServiceOrderById,
   updateServiceOrder,
   deleteServiceOrder,
+  getNextRecurringOrders,
 } from "./serviceOrder.controller";
+import { serviceOrderValidation } from "./serviceOrder.validation";
+import { handleValidation } from "../../../../middlewares/validation.middleware";
 
 const router = express.Router();
 
-router.post("/", createServiceOrder);
+router.post("/", serviceOrderValidation, handleValidation, createServiceOrder);
 router.get("/", getAllServiceOrders);
+router.get("/recurring", getNextRecurringOrders);
 router.get("/:id", getServiceOrderById);
 router.patch("/:id", updateServiceOrder);
 router.delete("/:id", deleteServiceOrder);

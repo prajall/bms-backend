@@ -6,17 +6,11 @@ const employeeSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User is required"],
+      index: true,
     },
     name: {
       type: String,
       required: [true, "Name is required"],
-    },
-    role: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Role",
-      required: [true, "User is required"],
-      default: "673afeb1d27f8553ab5cb062",
-      index: true,
     },
     image: {
       type: String,

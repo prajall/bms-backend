@@ -6,7 +6,7 @@ export const checkPermission = (module: string, action: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       console.log("Check Permission: ", module, action);
-      const userRole = req.user?.roleId.toString();
+      const userRole = req.user?.role?.toString();
 
       if (!userRole) {
         return res
@@ -20,14 +20,16 @@ export const checkPermission = (module: string, action: string) => {
         console.log("no role doc");
         return res.status(403).json({ message: "User's Role not found" });
       }
-      if (roleDoc.name === "Master") {
+
+      if (roleDoc.name === "master") {
         next();
         return;
       }
 
       const hasPermission = roleDoc.permissions.some((permission: any) => {
         return (
-          permission.module === module && permission.actions.includes(action)
+          permission.module.tolowerCase() === module.toLowerCase() &&
+          permission.actions.includes(action).tolowerCase()
         );
       });
 

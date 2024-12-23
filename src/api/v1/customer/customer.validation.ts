@@ -20,26 +20,26 @@ export const customerValidation = [
     .withMessage("Gender must be either male, female, or other"),
 
   body("address.country")
-    .notEmpty()
-    .withMessage("Country is required")
+    // .notEmpty()
+    // .withMessage("Country is required")
     .isString()
     .withMessage("Country must be a string"),
 
   body("address.province")
-    .notEmpty()
-    .withMessage("Province is required")
+    // .notEmpty()
+    // .withMessage("Province is required")
     .isString()
     .withMessage("Province must be a string"),
 
   body("address.city")
-    .notEmpty()
-    .withMessage("City is required")
+    // .notEmpty()
+    // .withMessage("City is required")
     .isString()
     .withMessage("City must be a string"),
 
   body("address.addressLine")
-    .notEmpty()
-    .withMessage("Address line is required")
+    // .notEmpty()
+    // .withMessage("Address line is required")
     .isString()
     .withMessage("Address line must be a string"),
 
@@ -54,13 +54,7 @@ export const customerValidation = [
     .matches(/^\+?[0-9]{7,15}$/)
     .withMessage("Invalid phone number format"),
 
-  body("mobileNo1")
-    .optional()
-    .matches(/^\+?[0-9]{7,15}$/)
-    .withMessage("Invalid mobile number format"),
+  body("mobileNo1").optional(),
 
-  body("mobileNo2")
-    .optional()
-    .matches(/^\+?[0-9]{7,15}$/)
-    .withMessage("Invalid mobile number format"),
+  body("mobileNo2").optional(),
 ];

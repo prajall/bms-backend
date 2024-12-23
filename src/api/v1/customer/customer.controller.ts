@@ -62,13 +62,23 @@ export const getAllCustomers = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const sortField = (req.query.sortField as string) || "createdAt";
     const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
+    const search = (req.query.search as string) || ""; // Get the search query
 
     const skip = (page - 1) * limit;
 
-    const totalCustomers = await Customer.countDocuments({});
+    // Build the filter based on search
+    const filter = search
+      ? {
+          name: { $regex: search, $options: "i" }, // Case-insensitive regex search on name
+        }
+      : {};
+
+    // Get the total count of customers matching the search
+    const totalCustomers = await Customer.countDocuments(filter);
     const totalPages = Math.ceil(totalCustomers / limit);
 
-    const customers = await Customer.find({})
+    // Fetch the customers with pagination and search
+    const customers = await Customer.find(filter)
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);

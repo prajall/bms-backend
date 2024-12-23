@@ -1,13 +1,13 @@
 import { body } from "express-validator";
 
 export const serviceProvidedValidation = [
-  body("serviceId")
+  body("service")
     .notEmpty()
     .withMessage("Service ID is required")
     .isMongoId()
     .withMessage("Invalid Service ID format"),
 
-  body("serviceOrderId")
+  body("serviceOrder")
     .notEmpty()
     .withMessage("Service Order ID is required")
     .isMongoId()
@@ -56,9 +56,4 @@ export const serviceProvidedValidation = [
     .optional()
     .isString()
     .withMessage("Additional notes must be a string"),
-
-  body("billing").isArray().withMessage("Billing must be an array").optional(),
-  body("billing.*")
-    .isMongoId()
-    .withMessage("Each billing entry must be a valid MongoDB ObjectId"),
 ];

@@ -14,7 +14,7 @@ const posSchema = new mongoose.Schema(
     },
     products: [
       {
-        productId: {
+        product: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Product",
           required: true,
@@ -33,7 +33,7 @@ const posSchema = new mongoose.Schema(
     ],
     parts: [
       {
-        partId: {
+        part: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Part",
           required: true,
@@ -50,50 +50,44 @@ const posSchema = new mongoose.Schema(
         },
       },
     ],
-    services: [
+    serviceOrders: [
       {
-        serviceId: {
+        serviceOrder: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Service",
+          ref: "ServiceOrder",
           required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        additionalNotes: {
-          type: String,
-          maxlength: 1000,
-        },
-        date: {
-          type: Date,
         },
       },
     ],
-    installations: [
-      {
-        installationId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProductInstallation",
-          required: true,
-        },
-        price: {
-          type: Number,
-          required: true,
-          min: 0,
-        },
-        additionalNotes: {
-          type: String,
-          maxlength: 1000,
-        },
-      },
-    ],
-
     totalPrice: {
       type: Number,
       required: true,
       min: 0,
+    },
+    subTotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    tax: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    orderId: {
+      type: String,
+      required: true,
+    },
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
     },
   },
   {

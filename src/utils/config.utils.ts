@@ -29,19 +29,63 @@ export const readConfig = (type: string) => {
 };
 
 // This function will also create a new field if it doesn't exist
+
+const deepMerge = (target: any, source: any): any => {
+  for (const key of Object.keys(source)) {
+    if (
+      typeof source[key] === "object" &&
+      source[key] !== null &&
+      !Array.isArray(source[key])
+    ) {
+      if (!target[key]) target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
+  console.log("target", target);
+  return target;
+};
+
+const setNestedValue = (obj: any, path: string, value: any): void => {
+  const keys = path.split(".");
+  let current = obj;
+
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (typeof current[keys[i]] !== "object" || current[keys[i]] === null) {
+      current[keys[i]] = {};
+    }
+    current = current[keys[i]];
+  }
+
+  // Deep merge if value is an object, otherwise directly set
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    current[keys[keys.length - 1]] = deepMerge(
+      current[keys[keys.length - 1]] || {},
+      value
+    );
+  } else {
+    current[keys[keys.length - 1]] = value;
+  }
+};
 export const updateConfig = (
   type: string,
-  key: string,
-  value: any
+  updates: Record<string, any>
 ): boolean => {
   try {
     const config = readConfig(type);
-    config[key] = value;
 
+    // Apply updates to the config
+    Object.entries(updates).forEach(([key, value]) => {
+      setNestedValue(config, key, value);
+    });
+
+    // Save the updated config
     fs.writeFileSync(
       type === "business" ? BUSINESS_CONFIG_PATH : SYSTEM_CONFIG_PATH,
       JSON.stringify(config, null, 2)
     );
+
     return true;
   } catch (error) {
     console.error("Error updating config file:", error);

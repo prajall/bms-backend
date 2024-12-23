@@ -7,6 +7,7 @@ const customerSchema = new Schema(
       ref: "User",
       required: true,
       default: "673f15dd1f67e9ecdadaf39d",
+      index: true,
     },
     name: {
       type: String,
@@ -24,7 +25,7 @@ const customerSchema = new Schema(
     address: {
       country: { type: String, required: true },
       province: { type: String, required: true },
-      city: { type: String, required: true },
+      city: { type: String },
       addressLine: { type: String },
       houseNo: { type: String },
     },

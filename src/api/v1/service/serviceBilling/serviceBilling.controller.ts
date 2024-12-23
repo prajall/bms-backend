@@ -1,33 +1,68 @@
 import { Request, Response } from "express";
 import Billing from "./serviceBilling.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
+import serviceOrderModel from "../serviceOrder/serviceOrder.model";
 
 // Create a billing record
 export const createBilling = async (req: Request, res: Response) => {
-  const {
-    customer,
-    serviceOrder,
-    serviceProvided,
-    totalAmount,
-    paidAmount = 0,
-    previousDue = 0,
-    remainingAmount = 0,
-  } = req.body;
+  const { serviceOrder } = req.body;
+  const paidAmount = parseInt(req.body.paidAmount.toString()) || 0;
 
   try {
+    if (paidAmount <= 0) {
+      return apiError(res, 400, "Paid amount must be greater than 0");
+    }
+    const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder);
+
+    if (!serviceOrderDoc) {
+      return apiError(res, 404, "Service order not found");
+    }
+
+    const previousBillings = await Billing.find({
+      serviceOrder: serviceOrder,
+    });
+
+    const totalPaid = previousBillings.reduce(
+      (sum, billing) => sum + billing.paidAmount,
+      0
+    );
+    const totalAmount =
+      serviceOrderDoc.serviceCharge -
+      (serviceOrderDoc.discount || 0) * (serviceOrderDoc.serviceCharge / 100);
+    const remainingAmount = totalAmount - totalPaid;
+
+    // Calculate the new payment status
+    const updatedTotalPaid = totalPaid + paidAmount;
+    console.log("updatedTotalPaid", updatedTotalPaid, "total paid", totalPaid);
+    let paymentStatus = "unpaid";
+    if (updatedTotalPaid >= serviceOrderDoc.serviceCharge) {
+      paymentStatus = "paid";
+    } else if (updatedTotalPaid > 0) {
+      paymentStatus = "partial";
+    }
+
+    // Create the billing document
     const newBilling = await Billing.create({
-      customer,
+      customer: serviceOrderDoc.customer,
+      type: "service",
       serviceOrder,
-      serviceProvided,
-      totalAmount,
+      orderId: serviceOrderDoc.orderId,
+      order: serviceOrderDoc.order,
+      date: new Date(),
+      totalAmount: serviceOrderDoc.serviceCharge,
       paidAmount,
-      previousDue,
-      remainingAmount,
+      totalPaid: updatedTotalPaid,
+      remainingAmount: remainingAmount - paidAmount,
+      status: paymentStatus,
     });
 
     if (!newBilling) {
-      return apiError(res, 400, "Failed to create billing");
+      return apiError(res, 500, "Failed to create billing");
     }
+
+    // Update the payment status in the ServiceOrder
+    serviceOrderDoc.paymentStatus = paymentStatus;
+    await serviceOrderDoc.save();
 
     return apiResponse(res, 201, "Billing created successfully", newBilling);
   } catch (error: any) {
@@ -37,7 +72,11 @@ export const createBilling = async (req: Request, res: Response) => {
 };
 
 export const getBillings = async (req: Request, res: Response) => {
-  const { serviceOrder, serviceProvided, customerId } = req.query;
+  const { serviceOrder, customerId, orderId, order } = req.body;
+
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
 
   try {
     let filter: any = {};
@@ -48,28 +87,39 @@ export const getBillings = async (req: Request, res: Response) => {
     if (serviceOrder) {
       filter.serviceOrder = serviceOrder;
     }
-
-    if (serviceProvided) {
-      filter.serviceProvided = serviceProvided;
+    if (orderId) {
+      filter.orderId = orderId;
+    }
+    if (order) {
+      filter.order = order;
     }
 
     const billings = await Billing.find(filter)
       .populate({
-        path: "customer serviceOrder serviceProvided",
-        strictPopulate: false,
+        path: "customer",
+        select: "name user _id ",
+        populate: { path: "user", select: "email _id" },
       })
+      .populate({
+        path: "serviceOrder",
+        select:
+          "orderId order serviceCharge discount service status paymentStatus ",
+        populate: { path: "service", select: "name " },
+      })
+      .skip(skip)
+      .limit(limit)
       .sort({ createdAt: -1 })
       .exec();
 
-    // if (!billings.length) {
-    //   return apiError(
-    //     res,
-    //     404,
-    //     "No billings found for this customer with the specified filters"
-    //   );
-    // }
+    const totalBillings = await Billing.countDocuments(filter);
+    const totalPages = Math.ceil(totalBillings / limit);
 
-    return apiResponse(res, 200, "Billings fetched successfully", billings);
+    return apiResponse(res, 200, "Billings fetched successfully", {
+      billings,
+      totalBillings,
+      currentPage: page,
+      totalPages,
+    });
   } catch (error: any) {
     console.error("Error fetching billings:", error);
     return apiError(res, 500, "Error fetching billings", error.message);
@@ -81,7 +131,8 @@ export const getBillingById = async (req: Request, res: Response) => {
 
   try {
     const billing = await Billing.findById(billingId)
-      .populate("customer serviceOrder serviceProvided")
+      .populate("customer serviceOrder")
+
       .exec();
 
     if (!billing) {
@@ -97,7 +148,7 @@ export const getBillingById = async (req: Request, res: Response) => {
 
 export const updateBilling = async (req: Request, res: Response) => {
   const { billingId } = req.params;
-  const { totalAmount, paidAmount, previousDue, remainingAmount } = req.body;
+  const { totalAmount, paidAmount } = req.body;
 
   try {
     const billing = await Billing.findById(billingId);
@@ -107,10 +158,8 @@ export const updateBilling = async (req: Request, res: Response) => {
     }
 
     // Update values
-    billing.totalAmount = totalAmount;
-    billing.paidAmount = paidAmount;
-    billing.previousDue = previousDue;
-    billing.remainingAmount = remainingAmount;
+    billing.totalAmount = totalAmount || billing.totalAmount;
+    billing.paidAmount = paidAmount || billing.paidAmount;
 
     await billing.save();
 

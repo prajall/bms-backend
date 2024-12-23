@@ -11,10 +11,23 @@ const billingSchema = new mongoose.Schema(
       ref: "ServiceOrder",
       required: true,
     },
-    serviceProvided: {
+    orderId: {
+      type: String,
+      required: true,
+    },
+    order: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "ServiceProvided",
-      required: false,
+      ref: "Order",
+    },
+    date: {
+      type: Date,
+      required: true,
+      default: Date.now(),
+    },
+    status: {
+      type: String,
+      required: true,
+      default: "unpaid",
     },
     totalAmount: {
       type: Number,
@@ -27,16 +40,21 @@ const billingSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    previousDue: {
+    totalPaid: {
       type: Number,
       default: 0,
       min: 0,
     },
-    remainingAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    // previousDue: {
+    //   type: Number,
+    //   default: 0,
+    //   min: 0,
+    // },
+    // remainingAmount: {
+    //   type: Number,
+    //   required: true,
+    //   min: 0,
+    // },
   },
   { timestamps: true }
 );
