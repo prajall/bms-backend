@@ -12,8 +12,10 @@ export const createBilling = async (req: Request, res: Response) => {
     if (paidAmount <= 0) {
       return apiError(res, 400, "Paid amount must be greater than 0");
     }
-    const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder);
-
+    const serviceOrderDoc = await serviceOrderModel
+      .findById(serviceOrder)
+      .populate("customer", "name phoneNo address")
+      .populate("service", "title");
     if (!serviceOrderDoc) {
       return apiError(res, 404, "Service order not found");
     }
@@ -63,8 +65,17 @@ export const createBilling = async (req: Request, res: Response) => {
     // Update the payment status in the ServiceOrder
     serviceOrderDoc.paymentStatus = paymentStatus;
     await serviceOrderDoc.save();
+    
+    const populatedBilling = await Billing.findById(newBilling._id)
+      .populate("customer", "name phoneNo address")
+      .populate("serviceOrder", "serviceCharge discount")
+      .populate({
+        path: "serviceOrder",
+        populate: { path: "service", select: "title" },
+      });
 
-    return apiResponse(res, 201, "Billing created successfully", newBilling);
+
+    return apiResponse(res, 201, "Billing created successfully", populatedBilling);
   } catch (error: any) {
     console.error("Error creating billing:", error);
     return apiError(res, 500, "Error creating billing", error.message);
@@ -97,14 +108,14 @@ export const getBillings = async (req: Request, res: Response) => {
     const billings = await Billing.find(filter)
       .populate({
         path: "customer",
-        select: "name user _id ",
+        select: "name user _id phoneNo address",
         populate: { path: "user", select: "email _id" },
       })
       .populate({
         path: "serviceOrder",
         select:
           "orderId order serviceCharge discount service status paymentStatus ",
-        populate: { path: "service", select: "name " },
+        populate: { path: "service", select: "title " },
       })
       .skip(skip)
       .limit(limit)
