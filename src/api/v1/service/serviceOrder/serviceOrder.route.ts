@@ -2,7 +2,9 @@ import express from "express";
 import {
   createServiceOrder,
   getAllServiceOrders,
+  getMiniServiceOrders,
   getServiceOrderById,
+  getServiceOrdersByOrderId,
   updateServiceOrder,
   deleteServiceOrder,
   getNextRecurringOrders,
@@ -14,8 +16,10 @@ const router = express.Router();
 
 router.post("/", serviceOrderValidation, handleValidation, createServiceOrder);
 router.get("/", getAllServiceOrders);
+router.get("/mini-list", getMiniServiceOrders);
 router.get("/recurring", getNextRecurringOrders);
 router.get("/:id", getServiceOrderById);
+router.get("/orderid/:orderId", getServiceOrdersByOrderId);
 router.patch("/:id", updateServiceOrder);
 router.delete("/:id", deleteServiceOrder);
 

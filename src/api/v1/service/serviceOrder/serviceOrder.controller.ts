@@ -242,6 +242,41 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
   }
 };
 
+export const getMiniServiceOrders = async (req: Request, res: Response) => {
+  try {
+    const miniServiceOrders = await ServiceOrder.aggregate([
+      {
+        $sort: { orderId: 1, createdAt: 1 }, 
+      },
+      {
+        $group: {
+          _id: "$orderId", 
+          doc: { $first: "$$ROOT" }, 
+        },
+      },
+      {
+        $replaceRoot: { newRoot: "$doc" }, 
+      },
+      {
+        $sort: { createdAt: -1 }, 
+      },
+      {
+        $project: {
+          _id: 1,
+          orderId: 1,
+        }, 
+      },
+    ]);
+
+    return apiResponse(res, 200, "Mini service orders fetched successfully", miniServiceOrders);
+  } catch (error: any) {
+    console.error("Error fetching mini service orders:", error);
+    return apiError(res, 500, "Internal server error", error.message);
+  }
+};
+
+
+
 export const getServiceOrderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -284,6 +319,91 @@ export const getServiceOrderById = async (req: Request, res: Response) => {
     return apiError(res, 500, "Internal server error", error.message);
   }
 };
+
+export const getServiceOrdersByOrderId = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return apiError(res, 400, "Order ID is required");
+    }
+
+    // Fetch all service orders with the given orderId
+    const serviceOrders = await ServiceOrder.find({ orderId })
+      .populate({
+        path: "service",
+        select: "-createdAt -updatedAt",
+      })
+      .populate({
+        path: "customer",
+        select: "name phoneNo address",
+        strictPopulate: false,
+      });
+
+    if (serviceOrders.length === 0) {
+      return apiError(res, 404, "No service orders found with the given order ID");
+    }
+
+    // Get the customer information from the first service order (assuming all have the same customer)
+    const customer = serviceOrders[0].customer;
+
+    // Calculate billing details for each service order and group them under "order"
+    const orders = serviceOrders.map((order) => {
+      return {
+        _id: order._id,
+        service: order.service,
+        date: order.date,
+        address: order.address,
+        contactNumber: order.contactNumber,
+        isRecurring: order.isRecurring,
+        interval: order.interval,
+        nextServiceDate: order.nextServiceDate,
+        serviceCharge: order.serviceCharge,
+        additionalNotes: order.additionalNotes,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        remainingAmount: order.remainingAmount,
+      };
+    });
+
+    // Fetch all previous billings related to the given orderId
+    const previousBillings = await BillingModel.find({ orderId }).sort({ date: 1 });
+
+    // Calculate the total paid and remaining amounts across all service orders
+    const totalPaid = previousBillings.reduce(
+      (sum, billing) => sum + billing.paidAmount,
+      0
+    );
+
+    const totalServiceCharge = serviceOrders.reduce(
+      (sum, order) => sum + order.serviceCharge,
+      0
+    );
+
+    const remainingAmount = totalServiceCharge - totalPaid;
+
+    // Prepare the final response
+    const response = {
+      serviceOrder: {
+        order: orders,
+        orderId: orderId,
+        customer,
+      },
+      previousBillings,
+      totalPaid,
+      remainingAmount,
+    };
+
+    return apiResponse(res, 200, "Service orders retrieved successfully", response);
+  } catch (error: any) {
+    console.error("Error retrieving service orders:", error);
+    return apiError(res, 500, "Internal server error", error.message);
+  }
+};
+
+
 
 export const updateServiceOrder = async (req: Request, res: Response) => {
   try {
