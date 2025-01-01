@@ -351,6 +351,7 @@ export const getServiceOrdersByOrderId = async (req: Request, res: Response) => 
     const orders = serviceOrders.map((order) => {
       return {
         _id: order._id,
+        order: order.order,
         service: order.service,
         date: order.date,
         address: order.address,

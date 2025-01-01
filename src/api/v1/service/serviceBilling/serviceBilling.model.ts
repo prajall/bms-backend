@@ -74,17 +74,17 @@ const billingSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-billingSchema.pre("save", async function (next: (err?: CallbackError) => void) {
-  if (!this.isNew) return next();
+// billingSchema.pre("save", async function (next: (err?: CallbackError) => void) {
+//   if (!this.isNew) return next();
 
-  try {
-    const lastBilling = await mongoose.model("Billing").findOne().sort({ createdAt: -1 });
-    const lastIndex = lastBilling ? parseInt(lastBilling.invoice.split("-")[2], 10) || 0 : 0;
-    this.invoice = `INV-${(lastIndex + 1).toString().padStart(5, "0")}`;
-    next();
-  } catch (error) {
-    next(error as CallbackError);
-  }
-});
+//   try {
+//     const lastBilling = await mongoose.model("Billing").findOne().sort({ createdAt: -1 });
+//     const lastIndex = lastBilling ? parseInt(lastBilling.invoice.split("-")[2], 10) || 0 : 0;
+//     this.invoice = `INV-${(lastIndex + 1).toString().padStart(5, "0")}`;
+//     next();
+//   } catch (error) {
+//     next(error as CallbackError);
+//   }
+// });
 
 export default mongoose.model("Billing", billingSchema);
