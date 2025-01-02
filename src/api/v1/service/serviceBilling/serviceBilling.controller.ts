@@ -218,8 +218,9 @@ export const getBillings = async (req: Request, res: Response) => {
       filter.customer = customerId;
     }
     if (serviceOrders && serviceOrders.length > 0) {
-      filter["serviceOrders.serviceOrder"] = { $in: serviceOrders };
+      filter["serviceOrders.serviceOrder"] = { $in: serviceOrders.map((order: { serviceOrder: string }) => order.serviceOrder) };
     }
+
     if (date) {
       const billingDate = new Date(date);
       filter.date = {
@@ -235,11 +236,14 @@ export const getBillings = async (req: Request, res: Response) => {
         populate: { path: "user", select: "email _id" },
       })
       .populate({
-        path: "serviceOrders.serviceOrder",
-        select:
-          "orderId order serviceCharge discount service status paymentStatus",
-        populate: { path: "service", select: "title" },
+        path: "serviceOrders",
+        populate: {
+          path: "serviceOrder",
+          select: "serviceCharge discount status paymentStatus",
+          populate: { path: "service", select: "title" },
+        },
       })
+
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -260,13 +264,44 @@ export const getBillings = async (req: Request, res: Response) => {
   }
 };
 
+// export const getBillingById = async (req: Request, res: Response) => {
+//   const { billingId } = req.params;
+
+//   try {
+//     const billing = await Billing.findById(billingId)
+//       .populate("customer serviceOrder")
+
+//       .exec();
+
+//     if (!billing) {
+//       return apiError(res, 404, "Billing record not found");
+//     }
+
+//     return apiResponse(res, 200, "Billing fetched successfully", billing);
+//   } catch (error: any) {
+//     console.error("Error fetching billing:", error);
+//     return apiError(res, 500, "Error fetching billing", error.message);
+//   }
+// };
+
 export const getBillingById = async (req: Request, res: Response) => {
   const { billingId } = req.params;
 
   try {
     const billing = await Billing.findById(billingId)
-      .populate("customer serviceOrder")
-
+      .populate({
+        path: "customer",
+        select: "name user _id phoneNo address",
+        populate: { path: "user", select: "email _id" },
+      })
+      .populate({
+        path: "serviceOrders",
+        populate: {
+          path: "serviceOrder",
+          select: "serviceCharge discount status paymentStatus",
+          populate: { path: "service", select: "title" },
+        },
+      })
       .exec();
 
     if (!billing) {
@@ -279,6 +314,7 @@ export const getBillingById = async (req: Request, res: Response) => {
     return apiError(res, 500, "Error fetching billing", error.message);
   }
 };
+
 
 export const updateBilling = async (req: Request, res: Response) => {
   const { billingId } = req.params;

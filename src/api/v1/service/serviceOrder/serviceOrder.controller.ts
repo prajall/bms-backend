@@ -4,6 +4,7 @@ import ServiceProvided from "../serviceProvided/serviceProvided.model";
 import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
+import { createBilling } from "../serviceBilling/serviceBilling.controller";
 import Service from "../service/service.model";
 import mongoose from "mongoose";
 import BillingModel from "../serviceBilling/serviceBilling.model";
@@ -25,6 +26,7 @@ interface ServiceOrder {
 export const createServiceOrder = async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let transactionCommitted = false;
 
   try {
     let {
@@ -123,6 +125,7 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
       if (!serviceOrder) {
         await session.abortTransaction();
+        session.endSession();
         return apiError(res, 500, "Failed to create service order");
       }
 
@@ -145,44 +148,50 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
     if (!serviceOrder) {
       await session.abortTransaction();
+      session.endSession();
       return apiError(res, 500, "Failed to create service order");
     }
 
-    if (paidAmount) {
-      if (!serviceOrder || !serviceOrder[0]?._id) {
-        await session.abortTransaction();
-        return apiError(
-          res,
-          500,
-          "Failed to create service order, billing aborted"
-        );
-      }
-
-      const billing = await BillingModel.create(
-        [
-          {
-            customer,
-            type: "service",
-            serviceOrder: serviceOrder[0]._id,
-            order: newServiceOrder.order,
-            orderId: newServiceOrder.orderId,
-            date,
-            totalAmount: serviceCharge,
-            paidAmount,
-            status: paymentStatus,
-          },
-        ],
-        { session }
-      );
-      console.log("billing", billing[0]);
-      if (!billing) {
-        await session.abortTransaction();
-        return apiError(res, 500, "Failed to create billing");
-      }
-    }
-
     await session.commitTransaction();
+    transactionCommitted = true;
+
     session.endSession();
+
+    if (paidAmount) {
+      try {
+        if (!serviceOrder || !serviceOrder[0]?._id) {
+          await session.abortTransaction();
+          return apiError(
+            res,
+            500,
+            "Failed to create service order, billing aborted"
+          );
+        }
+
+        const mockRequest = {
+          body: {
+            serviceOrders: [
+              {
+                serviceOrder: serviceOrder[0]._id,
+                orderId: newServiceOrder.orderId,
+                order: newServiceOrder.order,
+              },
+            ],
+            paidAmount,
+            date,
+            customer,
+            discount,
+            totalAmount: serviceCharge,
+          },
+        } as Request;
+      
+        await createBilling(mockRequest, res);
+        
+    } catch (error) {
+      console.error("Error creating billing:", error);
+      return apiError(res, 500, "Failed to create billing");
+    }
+    }
 
     return apiResponse(
       res,
@@ -191,12 +200,16 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       serviceOrder[0]
     );
   } catch (error: any) {
-    await session.abortTransaction();
-    session.endSession();
+    if (!transactionCommitted) {
+      await session.abortTransaction();
+    }
     console.error("Error creating service order:", error);
+    session.endSession();
     return apiError(res, 500, "Internal server error", error.stack);
   } finally {
-    session.endSession();
+    if (!transactionCommitted) {
+      session.endSession();
+    }
   }
 };
 
