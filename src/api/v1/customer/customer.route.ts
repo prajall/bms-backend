@@ -4,6 +4,7 @@ import {
   createCustomer,
   deleteCustomer,
   getAllCustomers,
+  getAllCustomerList,
   getCustomerDetails,
   updateCustomer,
 } from "./customer.controller";
@@ -13,6 +14,7 @@ const router = Router();
 
 router.post("/", customerValidation, handleValidation, createCustomer);
 router.get("/", getAllCustomers);
+router.get("/mini-list", getAllCustomerList);
 router.get("/:id", getCustomerDetails);
 router.patch("/:id", customerValidation, handleValidation, updateCustomer);
 router.delete("/:id", deleteCustomer);

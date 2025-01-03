@@ -16,6 +16,7 @@ import serviceOrderRoutes from "./api/v1/service/serviceOrder/serviceOrder.route
 import productInstallationRoutes from "./api/v1/productInstallation/productInstallation.route";
 import serviceBillingRoutes from "./api/v1/service/serviceBilling/serviceBilling.route";
 import orderRoutes from "./api/v1/order/order.route";
+import reportRoutes from "./api/v1/reports/report.route";
 
 import { apiError, apiResponse } from "./utils/response.util";
 import cors from "cors";
@@ -84,6 +85,7 @@ apiRoutes.use("/service-billing", serviceBillingRoutes);
 apiRoutes.use("/pos", posRoutes);
 apiRoutes.use("/config", configRoutes);
 apiRoutes.use("/order", orderRoutes);
+apiRoutes.use("/report", reportRoutes);
 
 apiRoutes.get("/test", async (req: Request, res: Response) => {
   console.log("Testing !");

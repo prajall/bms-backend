@@ -98,6 +98,21 @@ export const getAllCustomers = async (req: Request, res: Response) => {
   }
 };
 
+export const getAllCustomerList = async (req: Request, res: Response) => {
+  try {
+    // Fetch all customers, selecting only the _id and name fields
+    const customers = await Customer.find({}, "_id name");
+
+    return apiResponse(res, 200, "Customer names retrieved successfully", {
+      customers,
+    });
+  } catch (error) {
+    console.error("Get all customer names error:", error);
+    return apiError(res, 500, "Failed to fetch customer names", error);
+  }
+};
+
+
 export const getCustomerDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
