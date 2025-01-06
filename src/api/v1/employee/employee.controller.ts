@@ -20,6 +20,7 @@ export const createEmployee = async (req: Request, res: Response) => {
     const createdUser = await User.create({
       email,
       password: hashedPassword,
+      type: "employee",
     });
 
     if (!createdUser) {
@@ -110,9 +111,38 @@ export const getEmployeeDetails = async (req: Request, res: Response) => {
 export const updateEmployee = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { email, password, ...employeeUpdates } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return apiError(res, 400, "Invalid employee ID format");
+    }
+
+    const employee = await Employee.findById(id).populate("user");
+    if (!employee) {
+      return apiError(res, 404, "Employee not found");
+    }
+
+    const user: any = employee.user; 
+
+    if (email || password) {
+      if (!user) {
+        return apiError(res, 404, "Associated user not found");
+      }
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          return apiError(res, 409, "Email already exists");
+        }
+        user.email = email;
+      }
+      if (password) {
+        const isSamePassword = await bcrypt.compare(password, user.password);
+        if (!isSamePassword) {
+          user.password = await bcrypt.hash(password, 10);
+        }
+      }
+      user.type = "employee";
+      await user.save();
     }
 
     const updatedEmployee = await Employee.findByIdAndUpdate(

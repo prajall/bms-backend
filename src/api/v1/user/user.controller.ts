@@ -131,7 +131,7 @@ export const getUserInfo = async (req: Request, res: Response) => {
     if (!user) {
       return apiError(res, 404, "User not found");
     }
-
+    console.log(user);
     const filteredUser = user.toObject() as any;
     delete filteredUser.createdAt;
     delete filteredUser.updatedAt;

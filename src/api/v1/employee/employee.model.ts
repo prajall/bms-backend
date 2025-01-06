@@ -12,6 +12,7 @@ const employeeSchema = new Schema(
       type: String,
       required: [true, "Name is required"],
     },
+    role: { type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true },
     image: {
       type: String,
       required: false,

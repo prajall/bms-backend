@@ -121,8 +121,8 @@ export const getAllPOS = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalPOS / limit);
 
     const posRecords = await POS.find(query)
-      .populate("products.productId", "name price")
-      .populate("parts.partId", "name price")
+      .populate("products.product", "name price")
+      .populate("parts.part", "name price")
       .populate("services.service", "name price")
       // .populate({
       //   path: "installations.installationId",
@@ -154,8 +154,8 @@ export const getPOSById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const pos = await POS.findById(id)
-      .populate("products.productId", "name price")
-      .populate("parts.partId", "name price")
+      .populate("products.product", "name price")
+      .populate("parts.part", "name price")
       .populate("services.service", "name price")
       // .populate("installations.installationId", "name price")
       .populate("customer", "name email");
@@ -181,8 +181,8 @@ export const updatePOS = async (req: Request, res: Response) => {
       new: true,
       runValidators: true,
     })
-      .populate("products.productId", "name price")
-      .populate("parts.partId", "name price")
+      .populate("products.product", "name price")
+      .populate("parts.part", "name price")
       .populate("services.service", "name price")
       .populate("installations.installationId", "name price")
       .populate("customer", "name email");

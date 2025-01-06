@@ -13,10 +13,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    type: {
+      type: String,
+      required: true,
+      enum: ["admin", "super_admin", "customer", "employee"],
+    },
     role: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Role",
-      required: true,
+      required: function (this: any) {
+        return this.type === "employee" || this.type === "admin";
+      },
     },
     verificationCode: {
       type: String,

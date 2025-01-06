@@ -22,6 +22,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const createdUser = await User.create({
       email,
       password: hashedPassword,
+      type: "customer",
     });
 
     if (!createdUser) {
@@ -79,6 +80,10 @@ export const getAllCustomers = async (req: Request, res: Response) => {
 
     // Fetch the customers with pagination and search
     const customers = await Customer.find(filter)
+      .populate({
+        path: "user",
+        select: "email password",
+      })
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);
@@ -121,7 +126,10 @@ export const getCustomerDetails = async (req: Request, res: Response) => {
       return apiError(res, 400, "Invalid customer ID format");
     }
 
-    const customer = await Customer.findById(id);
+    const customer = await Customer.findById(id).populate({
+        path: "user",
+        select: "email password",
+      });
 
     if (!customer) {
       return apiError(res, 404, "Customer not found");
@@ -137,9 +145,40 @@ export const getCustomerDetails = async (req: Request, res: Response) => {
 export const updateCustomer = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { email, password, ...customerUpdates } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return apiError(res, 400, "Invalid customer ID format");
+    }
+
+    const customer = await Customer.findById(id).populate("user");
+    if (!customer) {
+      return apiError(res, 404, "Customer not found");
+    }
+
+    if (email || password) {
+      const user:any = customer.user;
+
+      // Check if email is unique
+      if (email && email !== user.email) {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          return apiError(res, 409, "Email already exists");
+        }
+        user.email = email;
+      }
+
+      // Check if password is provided and different
+      if (password) {
+        const isSamePassword = await bcrypt.compare(password, user.password);
+        if (!isSamePassword) {
+          user.password = await bcrypt.hash(password, 10);
+        }
+      }
+      user.type = "customer";
+
+      // Save the updated user
+      await user.save();
     }
 
     const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {
@@ -148,7 +187,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
     });
 
     if (!updatedCustomer) {
-      return apiError(res, 404, "Customer not found");
+      return apiError(res, 500, "Failed to update customer");
     }
 
     return apiResponse(

@@ -13,7 +13,7 @@ export const validatePOS = [
     .withMessage("Invalid customer ID. Id must be mongo id"),
 
   // Validate products array
-  body("products.*.productId")
+  body("products.*.product")
     .notEmpty()
     .withMessage("Product ID is required")
     .isMongoId()
@@ -33,7 +33,7 @@ export const validatePOS = [
 
   // Validate parts array
   body("parts").optional().isArray().withMessage("Parts must be an array"),
-  body("parts.*.partId")
+  body("parts.*.part")
     .notEmpty()
     .withMessage("Part ID is required")
     .isMongoId()
