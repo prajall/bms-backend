@@ -16,13 +16,13 @@ const userSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["admin", "super_admin", "customer", "employee"],
+      enum: ["super_admin", "customer", "employee"],
     },
     role: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Role",
       required: function (this: any) {
-        return this.type === "employee" || this.type === "admin";
+        return this.type === "employee";
       },
     },
     verificationCode: {

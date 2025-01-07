@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import { User } from "./user.model";
+import Customer  from "../customer/customer.model";
+import Employee from "../employee/employee.model";
 import { Role } from "../role/role.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
 
@@ -131,8 +133,41 @@ export const getUserInfo = async (req: Request, res: Response) => {
     if (!user) {
       return apiError(res, 404, "User not found");
     }
-    console.log(user);
-    const filteredUser = user.toObject() as any;
+
+    const userQuery = User.findById(user._id).lean();
+
+    if (user.type === "employee") {
+      userQuery.populate("role");
+    }
+
+    const userDoc = await userQuery;
+
+    if (!userDoc) {
+      return apiError(res, 404, "User not found");
+    }
+
+    let additionalDetails: any = {};
+    if (userDoc.type === "customer") {
+      const customerDetails = await Customer.findOne({ user: userDoc._id }).lean();
+      if (customerDetails) {
+        additionalDetails.name = customerDetails.name;
+      }
+    } else if (userDoc.type === "employee") {
+      const employeeDetails = await Employee.findOne({ user: userDoc._id }).lean();
+      if (employeeDetails) {
+        additionalDetails.name = employeeDetails.name;
+        additionalDetails.role = userDoc.role; 
+      }
+    } else {
+      additionalDetails.name = "Super Admin";
+    }
+
+
+    // const filteredUser = user.toObject() as any;
+    const filteredUser = {
+      ...userDoc,
+      ...additionalDetails,
+    };
     delete filteredUser.createdAt;
     delete filteredUser.updatedAt;
     delete filteredUser.__v;

@@ -7,7 +7,7 @@ import { User } from "../user/user.model";
 
 export const createEmployee = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     const userExist = await User.findOne({ email });
     if (userExist) {
@@ -20,6 +20,7 @@ export const createEmployee = async (req: Request, res: Response) => {
     const createdUser = await User.create({
       email,
       password: hashedPassword,
+      role,
       type: "employee",
     });
 
@@ -95,7 +96,7 @@ export const getEmployeeDetails = async (req: Request, res: Response) => {
 
     const employee = await Employee.findById(id)
       .populate({ path: "user", strictPopulate: false })
-      .populate({ path: "role", strictPopulate: false });
+      // .populate({ path: "role", select: "_id", strictPopulate: false });
 
     if (!employee) {
       return apiError(res, 404, "Employee not found");
@@ -111,7 +112,7 @@ export const getEmployeeDetails = async (req: Request, res: Response) => {
 export const updateEmployee = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { email, password, ...employeeUpdates } = req.body;
+    const { email, password, role, ...employeeUpdates } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return apiError(res, 400, "Invalid employee ID format");
@@ -124,7 +125,8 @@ export const updateEmployee = async (req: Request, res: Response) => {
 
     const user: any = employee.user; 
 
-    if (email || password) {
+    if (email || password || role) {
+      // console.log(role);
       if (!user) {
         return apiError(res, 404, "Associated user not found");
       }
@@ -140,6 +142,9 @@ export const updateEmployee = async (req: Request, res: Response) => {
         if (!isSamePassword) {
           user.password = await bcrypt.hash(password, 10);
         }
+      }
+      if (role) {
+        user.role = role;
       }
       user.type = "employee";
       await user.save();
@@ -166,8 +171,8 @@ export const updateEmployee = async (req: Request, res: Response) => {
         runValidators: true,
       }
     )
-      .populate({ path: "user", strictPopulate: false })
-      .populate({ path: "role", strictPopulate: false });
+      .populate("user")
+      .populate("role");
 
     if (!updatedEmployee) {
       return apiError(res, 404, "Employee not found");
