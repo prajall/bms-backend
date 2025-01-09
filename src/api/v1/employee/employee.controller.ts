@@ -67,6 +67,7 @@ export const getAllEmployees = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalEmployees / limit);
 
     const employees = await Employee.find({})
+      .populate("role", "name")
       .sort({ [sortField]: sortOrder })
       .skip(skip)
       .limit(limit);

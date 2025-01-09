@@ -18,7 +18,7 @@ const router = Router();
 router.post(
   "/",
   authValidation,
-  checkPermission("employee", "add"),
+  checkPermission("employee", "create"),
   employeeValidation,
   handleValidation,
   createEmployee

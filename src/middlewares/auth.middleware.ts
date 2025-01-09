@@ -32,7 +32,6 @@ export const authValidation = async (
     if (!user) {
       return apiError(res, 404, "User not found");
     }
-
     (req as any).user = user;
     next();
   } catch (error: any) {
@@ -58,7 +57,7 @@ export const employeeVerification = async (
     .populate("role")
     .populate({ path: "user", select: "email" })
     .select("user name role");
-
+  
   if (!employee) {
     return apiError(
       res,

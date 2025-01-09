@@ -5,8 +5,7 @@ import { User } from "../api/v1/user/user.model";
 export const checkPermission = (module: string, action: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log("Check Permission: ", module, action);
-      const userRole = req.user?.role?.toString();
+      const userRole = req.user?.role?._id.toString();
       const userType = req.user?.type?.toString();
 
       if (userType === "super_admin") {
@@ -33,8 +32,10 @@ export const checkPermission = (module: string, action: string) => {
 
       const hasPermission = roleDoc.permissions.some((permission: any) => {
         return (
-          permission.module.tolowerCase() === module.toLowerCase() &&
-          permission.actions.includes(action).tolowerCase()
+          permission.module.toLowerCase() === module.toLowerCase() && 
+          permission.actions
+            .map((a: string) => a.toLowerCase())
+            .includes(action.toLowerCase())
         );
       });
 

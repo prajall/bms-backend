@@ -4,87 +4,8 @@ import { apiError, apiResponse } from "../../../../utils/response.util";
 import serviceOrderModel from "../serviceOrder/serviceOrder.model";
 import Counter from "../../models/Counter";
 
-// Create a billing record
-// export const createBilling = async (req: Request, res: Response) => {
-//   const { serviceOrder } = req.body;
-//   const paidAmount = parseInt(req.body.paidAmount.toString()) || 0;
-
-//   try {
-//     if (paidAmount <= 0) {
-//       return apiError(res, 400, "Paid amount must be greater than 0");
-//     }
-//     const serviceOrderDoc = await serviceOrderModel
-//       .findById(serviceOrder)
-//       .populate("customer", "name phoneNo address")
-//       .populate("service", "title");
-//     if (!serviceOrderDoc) {
-//       return apiError(res, 404, "Service order not found");
-//     }
-
-//     const previousBillings = await Billing.find({
-//       serviceOrder: serviceOrder,
-//     });
-
-//     const totalPaid = previousBillings.reduce(
-//       (sum, billing) => sum + billing.paidAmount,
-//       0
-//     );
-//     const totalAmount =
-//       serviceOrderDoc.serviceCharge -
-//       (serviceOrderDoc.discount || 0) * (serviceOrderDoc.serviceCharge / 100);
-//     const remainingAmount = totalAmount - totalPaid;
-
-//     // Calculate the new payment status
-//     const updatedTotalPaid = totalPaid + paidAmount;
-//     console.log("updatedTotalPaid", updatedTotalPaid, "total paid", totalPaid);
-//     let paymentStatus = "unpaid";
-//     if (updatedTotalPaid >= serviceOrderDoc.serviceCharge) {
-//       paymentStatus = "paid";
-//     } else if (updatedTotalPaid > 0) {
-//       paymentStatus = "partial";
-//     }
-
-//     // Create the billing document
-//     const newBilling = await Billing.create({
-//       customer: serviceOrderDoc.customer,
-//       type: "service",
-//       serviceOrder,
-//       orderId: serviceOrderDoc.orderId,
-//       order: serviceOrderDoc.order,
-//       date: new Date(),
-//       totalAmount: serviceOrderDoc.serviceCharge,
-//       paidAmount,
-//       totalPaid: updatedTotalPaid,
-//       remainingAmount: remainingAmount - paidAmount,
-//       status: paymentStatus,
-//     });
-
-//     if (!newBilling) {
-//       return apiError(res, 500, "Failed to create billing");
-//     }
-
-//     // Update the payment status in the ServiceOrder
-//     serviceOrderDoc.paymentStatus = paymentStatus;
-//     await serviceOrderDoc.save();
-    
-//     const populatedBilling = await Billing.findById(newBilling._id)
-//       .populate("customer", "name phoneNo address")
-//       .populate("serviceOrder", "serviceCharge discount")
-//       .populate({
-//         path: "serviceOrder",
-//         populate: { path: "service", select: "title" },
-//       });
-
-
-//     return apiResponse(res, 201, "Billing created successfully", populatedBilling);
-//   } catch (error: any) {
-//     console.error("Error creating billing:", error);
-//     return apiError(res, 500, "Error creating billing", error.message);
-//   }
-// };
-
 export const createBilling = async (req: Request, res: Response) => {
-  const { serviceOrders, paidAmount, date } = req.body;
+  const { serviceOrders, paidAmount, date, discount = 0, tax = 0 } = req.body;
   const parsedPaidAmount = parseInt(paidAmount.toString()) || 0;
 
   try {
@@ -145,17 +66,20 @@ export const createBilling = async (req: Request, res: Response) => {
     }, Promise.resolve(0));
 
     const updatedTotalPaid = totalPaid + parsedPaidAmount;
-    const remainingAmount = totalAmount - updatedTotalPaid;
+
+    // Calculate tax and final total
+    const discountAmount = (totalAmount * discount) / 100;
+    const taxableAmount = totalAmount - discountAmount;
+    const taxAmount = (taxableAmount * tax) / 100;
+    const finalTotal = taxableAmount + taxAmount;
+
+    const remainingAmount = finalTotal - updatedTotalPaid;
     const paymentStatus =
-      updatedTotalPaid >= totalAmount
+      updatedTotalPaid >= finalTotal
         ? "paid"
         : updatedTotalPaid > 0
         ? "partial"
         : "unpaid";
-
-    // Calculate tax and final total
-    const tax = 0 * totalAmount; // Example 0% tax
-    const finalTotal = totalAmount + tax;
 
     const newBilling = await Billing.create({
       invoice: newInvoice,
@@ -170,8 +94,11 @@ export const createBilling = async (req: Request, res: Response) => {
       paidAmount: parsedPaidAmount,
       totalPaid: updatedTotalPaid,
       totalAmount,
-      discount: serviceOrderDocs.reduce((sum, { serviceOrderDoc }) => sum + (serviceOrderDoc.discount || 0), 0),
+      taxableAmount, 
+      discount, 
+      discountAmount,
       tax,
+      taxAmount, 
       finalTotal,
     });
 
@@ -318,20 +245,115 @@ export const getBillingById = async (req: Request, res: Response) => {
 
 export const updateBilling = async (req: Request, res: Response) => {
   const { billingId } = req.params;
-  const { totalAmount, paidAmount } = req.body;
+  const { serviceOrders = [], totalAmount, paidAmount, discount, tax, date, customer } = req.body;
 
   try {
-    const billing = await Billing.findById(billingId);
+    const billing = await Billing.findById(billingId).populate({
+      path: "serviceOrders.serviceOrder",
+      populate: { path: "customer service", select: "name phoneNo address title" },
+    });
 
     if (!billing) {
       return apiError(res, 404, "Billing record not found");
     }
 
-    // Update values
-    billing.totalAmount = totalAmount || billing.totalAmount;
-    billing.paidAmount = paidAmount || billing.paidAmount;
+    // Validate customer
+    if (customer && !billing.customer.equals(customer)) {
+      return apiError(
+        res,
+        400,
+        `Customer does not match the previous customer for this billing record.`
+      );
+    }
 
+    // Validate the date
+    if (date) {
+      const billingDate = new Date(date);
+      if (isNaN(billingDate.getTime())) {
+        return apiError(res, 400, "Invalid date provided");
+      }
+      const currentDate = new Date();
+      if (billingDate > currentDate) {
+        return apiError(res, 400, "Future dates are not allowed");
+      }
+      billing.date = billingDate;
+    }
+
+    // Fetch new serviceOrders
+    const serviceOrderDocs = await Promise.all(
+      serviceOrders.map(async (serviceOrder: any) => {
+        const doc = await serviceOrderModel
+          .findById(serviceOrder.serviceOrder)
+          .populate("customer", "name phoneNo address")
+          .populate("service", "title");
+
+        if (!doc) {
+          throw new Error(`Service order not found: ${serviceOrder.serviceOrder}`);
+        }
+
+        return {
+          serviceOrder: doc._id,
+          orderId: doc.orderId,
+          order: doc.order,
+        };
+      })
+    );
+
+    // Replace the DocumentArray field properly
+    billing.serviceOrders.splice(0, billing.serviceOrders.length); 
+    billing.serviceOrders.push(...serviceOrderDocs); 
+
+    // Calculate totalAmount based on the new serviceOrders
+    const totalAmount = await serviceOrderDocs.reduce(async (sumPromise, serviceOrder) => {
+      const sum = await sumPromise; // Ensure proper chaining
+      const serviceDoc: any = await serviceOrderModel.findById(serviceOrder.serviceOrder);
+      const amount =
+        serviceDoc.serviceCharge -
+        (serviceDoc.discount || 0) * (serviceDoc.serviceCharge / 100);
+      return sum + amount;
+    }, Promise.resolve(0));
+
+    const discountAmount = (totalAmount * discount) / 100;
+    const taxableAmount = totalAmount - discountAmount;
+    const taxAmount = (taxableAmount * tax) / 100;
+    const finalTotal = taxableAmount + taxAmount;
+
+    // Calculate total paid and remaining amount
+    const previousTotalPaid = billing.totalPaid - billing.paidAmount;
+    const updatedTotalPaid = previousTotalPaid + (paidAmount || billing.paidAmount);
+    const remainingAmount = finalTotal - updatedTotalPaid;
+
+    // Update payment status
+    const paymentStatus =
+      updatedTotalPaid >= finalTotal
+        ? "paid"
+        : updatedTotalPaid > 0
+        ? "partial"
+        : "unpaid";
+
+    billing.totalAmount = totalAmount;
+    billing.discount = discount;
+    billing.discountAmount = discountAmount;
+    billing.taxableAmount = taxableAmount;
+    billing.tax = tax;
+    billing.taxAmount = taxAmount;
+    billing.finalTotal = finalTotal;
+    billing.totalPaid = updatedTotalPaid;
+    billing.paidAmount = paidAmount || billing.paidAmount;
+    billing.status = paymentStatus;
+
+    // Save the updated billing
     await billing.save();
+
+    await Promise.all(
+      serviceOrderDocs.map(async (serviceOrder) => {
+        const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder.serviceOrder);
+        if (serviceOrderDoc) {
+          serviceOrderDoc.paymentStatus = paymentStatus;
+          await serviceOrderDoc.save();
+        }
+      })
+    );
 
     return apiResponse(res, 200, "Billing updated successfully", billing);
   } catch (error: any) {
