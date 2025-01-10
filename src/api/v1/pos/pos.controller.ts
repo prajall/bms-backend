@@ -123,7 +123,7 @@ export const getAllPOS = async (req: Request, res: Response) => {
     const posRecords = await POS.find(query)
       .populate("products.product", "name price")
       .populate("parts.part", "name price")
-      .populate("services.service", "name price")
+      // .populate("services.service", "name price")
       // .populate({
       //   path: "installations.installationId",
       //   select: "name price",
@@ -147,6 +147,21 @@ export const getAllPOS = async (req: Request, res: Response) => {
     return apiError(res, 500, "Error fetching POS records", error.message);
   }
 };
+
+export const getAllPOSList = async (req: Request, res: Response) => {
+  try {
+    // Fetch all records, selecting only _id and orderId
+    const posRecords = await POS.find().select("_id orderId");
+
+    return apiResponse(res, 200, "POS records retrieved successfully", {
+      posRecords,
+    });
+  } catch (error: any) {
+    console.error("Get all POS error:", error);
+    return apiError(res, 500, "Error fetching POS records", error.message);
+  }
+};
+
 
 // Get a single POS record by ID
 export const getPOSById = async (req: Request, res: Response) => {

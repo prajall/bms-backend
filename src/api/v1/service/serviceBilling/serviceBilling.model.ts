@@ -34,6 +34,23 @@ const billingSchema = new mongoose.Schema(
       },
       },
     ],
+    posOrders: [
+      {
+        posOrder: {
+          type: mongoose.Schema.Types.ObjectId, 
+          ref: "ServiceOrder",
+          required: true,
+        },
+        orderId: {
+          type: String, 
+          required: true,
+        },
+        order: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+      },
+      },
+    ],
     status: {
       type: String,
       required: true,
