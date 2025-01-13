@@ -2,10 +2,13 @@ import { Request, Response } from "express";
 import Category from "./category.model";
 import { apiResponse, apiError } from "../../../../utils/response.util";
 import mongoose from "mongoose";
+import { uploadOnCloudinary } from "../../../../utils/cloudinary.util";
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name, description, image } = req.body;
+    const { name, description } = req.body;
+    const image = req.file;
+    console.log(image);
 
     const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${name}$`, "i") },
@@ -14,12 +17,27 @@ export const createCategory = async (req: Request, res: Response) => {
       return apiError(res, 409, "Category with this name already exists");
     }
 
-    const category = await Category.create({ name, description, image });
+    let imageUrl = "";
+    if (image && image.size > 500000) {
+      return apiError(res, 400, "Image size should be less than 500KB");
+    }
+    if (image) {
+      const response = await uploadOnCloudinary(image.path);
+      console.log("Cloudinary response:", response);
+      if (response) {
+        imageUrl = response.secure_url;
+      }
+    }
+    const category = await Category.create({
+      name,
+      description,
+      image: imageUrl,
+    });
     if (!category) {
       return apiError(res, 500, "Failed to create category");
     }
 
-    return apiResponse(res, 201, "Category created successfully", category);
+    return apiResponse(res, 201, "Category created successfully");
   } catch (error) {
     console.error("Create category error:", error);
     return apiError(res, 500, "Internal server error", error);

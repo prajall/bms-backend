@@ -44,7 +44,7 @@ export const updateConfigValue = async (req: Request, res: Response) => {
   }
 
   const updates = req.body;
-
+  console.log("Body:", updates);
   // Recursively parse all boolean strings in the body
   const parseValues = (obj: any): any => {
     if (typeof obj === "object" && obj !== null) {

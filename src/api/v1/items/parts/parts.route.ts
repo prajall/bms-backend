@@ -9,11 +9,13 @@ import {
 } from "./parts.controller";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
 import { employeeVerification } from "../../../../middlewares/auth.middleware";
+import { upload } from "../../../../utils/multer.util";
 
 const router = Router();
 
 router.post(
   "/",
+  upload.none(),
   employeeVerification,
   validatePart,
   handleValidation,
@@ -21,6 +23,7 @@ router.post(
 );
 router.patch(
   "/:id",
+  upload.none(),
   employeeVerification,
   validatePartId,
   validatePart,

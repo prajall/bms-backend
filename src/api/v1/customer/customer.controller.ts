@@ -4,10 +4,13 @@ import Customer from "./customer.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import mongoose from "mongoose";
 import { User } from "../user/user.model";
+import { uploadOnCloudinary } from "../../../utils/cloudinary.util";
 
 export const createCustomer = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+
+    const image = req.file;
 
     console.log("body:", req.body);
 
@@ -17,6 +20,18 @@ export const createCustomer = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    let imageUrl = "";
+    if (image && image.size > 500000) {
+      return apiError(res, 400, "Image size should be less than 500KB");
+    }
+    if (image) {
+      const response = await uploadOnCloudinary(image.path);
+      console.log("Cloudinary response:", response);
+      if (response) {
+        imageUrl = response.secure_url;
+      }
+    }
 
     // Create user
     const createdUser = await User.create({
@@ -32,7 +47,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const customer = await Customer.create({
       user: createdUser._id,
       name: req.body.name,
-      image: req.body.image,
+      image: imageUrl,
       gender: req.body.gender,
       address: {
         country: req.body.address.country,
@@ -117,7 +132,6 @@ export const getAllCustomerList = async (req: Request, res: Response) => {
   }
 };
 
-
 export const getCustomerDetails = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -127,9 +141,9 @@ export const getCustomerDetails = async (req: Request, res: Response) => {
     }
 
     const customer = await Customer.findById(id).populate({
-        path: "user",
-        select: "email password",
-      });
+      path: "user",
+      select: "email password",
+    });
 
     if (!customer) {
       return apiError(res, 404, "Customer not found");
@@ -157,7 +171,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
     }
 
     if (email || password) {
-      const user:any = customer.user;
+      const user: any = customer.user;
 
       // Check if email is unique
       if (email && email !== user.email) {

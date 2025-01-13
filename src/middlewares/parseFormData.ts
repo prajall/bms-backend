@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { apiError } from "../utils/response.util";
+import { upload } from "../utils/multer.util";
 
 const reconstructNestedObject = (
   data: Record<string, any>

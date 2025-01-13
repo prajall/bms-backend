@@ -14,7 +14,7 @@ import { handleValidation } from "../../../middlewares/validation.middleware";
 const router = express.Router();
 
 router.get("/", employeeVerification, getAllRoles);
-router.post("/", createRoleValidation, handleValidation, createRole);
+router.post("/", createRole);
 router.get("/user", getUserRole);
 router.get("/:roleId", getRoleById);
 router.delete("/:roleId", deleteRole);

@@ -26,7 +26,8 @@ export const getAllRoles = async (req: Request, res: Response) => {
 
 export const createRole = async (req: Request, res: Response) => {
   const { name, permissions } = req.body;
-
+  console.log(name, permissions);
+  return res.send("ok");
   const roleName = name.toLowerCase();
 
   try {
@@ -43,16 +44,16 @@ export const createRole = async (req: Request, res: Response) => {
       ),
     }));
 
-    const newRole = await Role.create({
-      name: roleName,
-      permissions: processedPermissions,
-    });
+    // const newRole = await Role.create({
+    //   name: roleName,
+    //   permissions: processedPermissions,
+    // });
 
-    if (!newRole) {
-      return apiError(res, 500, "Error creating role in the database");
-    }
+    // if (!newRole) {
+    //   return apiError(res, 500, "Error creating role in the database");
+    // }
 
-    return apiResponse(res, 201, "Role created successfully", newRole);
+    return apiResponse(res, 201, "Role created successfully");
   } catch (error: any) {
     console.error("Error creating role:", error);
     return apiError(res, 500, "Error creating role", error.message);

@@ -24,9 +24,9 @@ import "./api/v1/user/user.model";
 import "./api/v1/role/role.model";
 import "./api/v1/customer/customer.model";
 import "./api/v1/employee/employee.model";
-import multer from "multer";
 import parseNestedFields from "./middlewares/parseFormData";
 import mongoose from "mongoose";
+import { upload } from "./utils/multer.util";
 
 const app = express();
 app.use(express.static("public"));
@@ -34,14 +34,13 @@ app.use(express.static("public"));
 export default app;
 
 //middlewares
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 //To handle form data
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-app.use(upload.none());
+// app.use(multer({ storage: multer.memoryStorage() }).none());
+// app.use(formConversion);
 //parse nested fields for formData
 app.use(parseNestedFields);
 
@@ -70,22 +69,29 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const apiRoutes = express.Router();
 app.use("/api/v1", apiRoutes);
 
-apiRoutes.use("/user", userRoutes);
-apiRoutes.use("/installation", installationRoutes);
-apiRoutes.use("/role", roleRoutes);
+// normal routes
+apiRoutes.use("/user", upload.none(), userRoutes);
+apiRoutes.use("/installation", upload.none(), installationRoutes);
+apiRoutes.use("/role", upload.none(), roleRoutes);
+apiRoutes.use("/service", upload.none(), serviceRoutes);
+apiRoutes.use("/service-order", upload.none(), serviceOrderRoutes);
+apiRoutes.use("/service-billing", upload.none(), serviceBillingRoutes);
+apiRoutes.use("/pos", upload.none(), posRoutes);
+apiRoutes.use("/config", upload.none(), configRoutes);
+apiRoutes.use("/order", upload.none(), orderRoutes);
+apiRoutes.use("/report", upload.none(), reportRoutes);
+apiRoutes.use(
+  "/product-installation",
+  upload.none(),
+  productInstallationRoutes
+);
+
+// image upload routes
 apiRoutes.use("/category", categoryRoutes);
 apiRoutes.use("/product", productRoutes);
 apiRoutes.use("/part", partRoutes);
-apiRoutes.use("/product-installation", productInstallationRoutes);
 apiRoutes.use("/employee", employeeRoutes);
 apiRoutes.use("/customer", customerRoutes);
-apiRoutes.use("/service", serviceRoutes);
-apiRoutes.use("/service-order", serviceOrderRoutes);
-apiRoutes.use("/service-billing", serviceBillingRoutes);
-apiRoutes.use("/pos", posRoutes);
-apiRoutes.use("/config", configRoutes);
-apiRoutes.use("/order", orderRoutes);
-apiRoutes.use("/report", reportRoutes);
 
 apiRoutes.get("/test", async (req: Request, res: Response) => {
   console.log("Testing !");

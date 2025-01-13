@@ -9,14 +9,30 @@ import {
   updateCustomer,
 } from "./customer.controller";
 import { handleValidation } from "../../../middlewares/validation.middleware";
+import { upload } from "../../../utils/multer.util";
+import parseNestedFields from "../../../middlewares/parseFormData";
 
 const router = Router();
 
-router.post("/", customerValidation, handleValidation, createCustomer);
+router.post(
+  "/",
+  upload.single("image"),
+  parseNestedFields,
+  customerValidation,
+  handleValidation,
+  createCustomer
+);
 router.get("/", getAllCustomers);
 router.get("/mini-list", getAllCustomerList);
 router.get("/:id", getCustomerDetails);
-router.patch("/:id", customerValidation, handleValidation, updateCustomer);
+router.patch(
+  "/:id",
+  upload.none(),
+  parseNestedFields,
+  customerValidation,
+  handleValidation,
+  updateCustomer
+);
 router.delete("/:id", deleteCustomer);
 
 export default router;
