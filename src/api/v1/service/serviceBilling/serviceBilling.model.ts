@@ -51,6 +51,11 @@ const billingSchema = new mongoose.Schema(
       },
       },
     ],
+    type: {
+      type: String,
+      required: true,
+      enum: ["service", "pos", "customer"],
+    },
     status: {
       type: String,
       required: true,

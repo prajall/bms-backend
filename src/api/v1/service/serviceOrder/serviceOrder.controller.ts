@@ -383,7 +383,10 @@ export const getServiceOrdersByOrderId = async (req: Request, res: Response) => 
     });
 
     // Fetch all previous billings related to the given orderId
-    const previousBillings = await BillingModel.find({ orderId }).sort({ date: 1 });
+    const previousBillings = await BillingModel.find({
+      orderId,
+      type: "service", 
+    }).sort({ date: 1 });
 
     // Calculate the total paid and remaining amounts across all service orders
     const totalPaid = previousBillings.reduce(

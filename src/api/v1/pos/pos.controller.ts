@@ -3,6 +3,7 @@ import POS from "./pos.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import Service from "../service/service/service.model";
+import Billing from "../service/serviceBilling/serviceBilling.model";
 import { createOrder } from "../order/order.controller";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
@@ -178,6 +179,31 @@ export const getPOSById = async (req: Request, res: Response) => {
     if (!pos) {
       return apiError(res, 404, "POS record not found");
     }
+
+    const pastBillings = await Billing.find({
+      type: "pos", 
+      "posOrders.order": id,
+    })
+      .populate("customer", "name email")
+      .populate("posOrders.order", "orderId")
+      .sort({ date: 1 });
+
+    if (pastBillings.length === 0) {
+      return apiError(res, 404, "No billing records found for the given POS ID");
+    }
+
+    const totalPaid = pastBillings.reduce((sum, billing) => sum + billing.paidAmount, 0);
+    const totalAmount = pastBillings.reduce((sum, billing) => sum + billing.totalAmount, 0);
+    const remainingAmount = totalAmount - totalPaid;
+
+    // Prepare the response object
+    const response = {
+      pos,
+      pastBillings,
+      totalPaid,
+      totalAmount,
+      remainingAmount,
+    };
 
     return apiResponse(res, 200, "POS record retrieved successfully", pos);
   } catch (error: any) {
