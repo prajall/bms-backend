@@ -4,10 +4,11 @@ import {
   fetchOrderDetails,
   fetchOrders,
 } from "./order.controller";
+import { checkPermission } from "../../../middlewares/permissions.middleware";
 
 const router = express.Router();
 
-router.get("/", fetchOrders);
-router.get("/:id", fetchOrderDetails);
+router.get("/", checkPermission("order", "view"), fetchOrders);
+router.get("/:id", checkPermission("order", "view"), fetchOrderDetails);
 
 export default router;

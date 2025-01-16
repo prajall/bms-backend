@@ -26,9 +26,10 @@ export const getAllRoles = async (req: Request, res: Response) => {
 
 export const createRole = async (req: Request, res: Response) => {
   const { name, permissions } = req.body;
-  console.log(name, permissions);
-  return res.send("ok");
+
   const roleName = name.toLowerCase();
+
+  console.log(permissions);
 
   try {
     const existingRole = await Role.findOne({ name: roleName });
@@ -37,21 +38,23 @@ export const createRole = async (req: Request, res: Response) => {
       return apiError(res, 409, `${name} role already exists`);
     }
 
-    const processedPermissions = permissions.map((permission: any) => ({
-      module: permission.module?.toLowerCase(),
-      actions: permission.actions?.map((action: string) =>
-        action.toLowerCase()
-      ),
-    }));
+    const processedPermissions = JSON.parse(permissions).map(
+      (permission: any) => ({
+        module: permission.module?.toLowerCase(),
+        actions: permission.actions?.map((action: string) =>
+          action.toLowerCase()
+        ),
+      })
+    );
 
-    // const newRole = await Role.create({
-    //   name: roleName,
-    //   permissions: processedPermissions,
-    // });
+    const newRole = await Role.create({
+      name: roleName,
+      permissions: processedPermissions,
+    });
 
-    // if (!newRole) {
-    //   return apiError(res, 500, "Error creating role in the database");
-    // }
+    if (!newRole) {
+      return apiError(res, 500, "Error creating role in the database");
+    }
 
     return apiResponse(res, 201, "Role created successfully");
   } catch (error: any) {

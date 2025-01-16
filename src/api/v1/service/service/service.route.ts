@@ -8,13 +8,26 @@ import {
 } from "./service.controller";
 import { validateService } from "./service.validation";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
+import { checkPermission } from "../../../../middlewares/permissions.middleware";
 
 const router = Router();
 
-router.post("/", validateService, handleValidation, createService);
-router.get("/", getAllServices);
-router.get("/:id", getServiceById);
-router.patch("/:id", validateService, handleValidation, updateService);
-router.delete("/:id", deleteService);
+router.post(
+  "/",
+  checkPermission("service", "create"),
+  validateService,
+  handleValidation,
+  createService
+);
+router.get("/", checkPermission("service", "view"), getAllServices);
+router.get("/:id", checkPermission("service", "view"), getServiceById);
+router.patch(
+  "/:id",
+  checkPermission("service", "update"),
+  validateService,
+  handleValidation,
+  updateService
+);
+router.delete("/:id", checkPermission("service", "delete"), deleteService);
 
 export default router;

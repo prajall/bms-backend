@@ -14,7 +14,10 @@ export const authValidation = async (
   next: NextFunction
 ) => {
   try {
+    console.log(req.cookies);
     const token = req.cookies?.token;
+
+    console.log("Token", token);
 
     if (!token) {
       return apiError(res, 401, "Authentication failed. Please Login first");
@@ -57,7 +60,7 @@ export const employeeVerification = async (
     .populate("role")
     .populate({ path: "user", select: "email" })
     .select("user name role");
-  
+
   if (!employee) {
     return apiError(
       res,

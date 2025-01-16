@@ -9,7 +9,7 @@ export const checkPermission = (module: string, action: string) => {
       const userType = req.user?.type?.toString();
 
       if (userType === "super_admin") {
-        return next(); 
+        return next();
       }
 
       if (!userRole) {
@@ -32,7 +32,7 @@ export const checkPermission = (module: string, action: string) => {
 
       const hasPermission = roleDoc.permissions.some((permission: any) => {
         return (
-          permission.module.toLowerCase() === module.toLowerCase() && 
+          permission.module.toLowerCase() === module.toLowerCase() &&
           permission.actions
             .map((a: string) => a.toLowerCase())
             .includes(action.toLowerCase())

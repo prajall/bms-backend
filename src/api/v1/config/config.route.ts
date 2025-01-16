@@ -5,6 +5,7 @@ import {
   updateConfigValue,
 } from "./config.controller";
 import { apiResponse } from "../../../utils/response.util";
+import { checkPermission } from "../../../middlewares/permissions.middleware";
 
 const router = Router();
 
@@ -25,8 +26,13 @@ const checkType = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-router.get("/", checkType, getConfig); // pass type in query
-router.get("/all", checkType, getAllConfig); // pass type="business" or "system" in query
-router.put("/", checkType, updateConfigValue); // pass key, value, type in query
+router.get("/", checkPermission("config", "view"), checkType, getConfig);
+router.get("/all", checkPermission("config", "view"), checkType, getAllConfig);
+router.put(
+  "/",
+  checkPermission("config", "update"),
+  checkType,
+  updateConfigValue
+); // pass key, value, type in query
 
 export default router;

@@ -29,7 +29,6 @@ export const readConfig = (type: string) => {
 };
 
 // This function will also create a new field if it doesn't exist
-
 const deepMerge = (target: any, source: any): any => {
   for (const key of Object.keys(source)) {
     if (
@@ -68,6 +67,7 @@ const setNestedValue = (obj: any, path: string, value: any): void => {
     current[keys[keys.length - 1]] = value;
   }
 };
+
 export const updateConfig = (
   type: string,
   updates: Record<string, any>

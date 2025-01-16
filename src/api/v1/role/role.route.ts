@@ -1,5 +1,4 @@
 import express from "express";
-import { employeeVerification } from "../../../middlewares/auth.middleware";
 import {
   createRole,
   deleteRole,
@@ -10,15 +9,28 @@ import {
 } from "./role.controller";
 import { createRoleValidation, updateRoleValidation } from "./role.validation";
 import { handleValidation } from "../../../middlewares/validation.middleware";
+import { checkPermission } from "../../../middlewares/permissions.middleware";
 
 const router = express.Router();
 
-router.get("/", employeeVerification, getAllRoles);
-router.post("/", createRole);
 router.get("/user", getUserRole);
-router.get("/:roleId", getRoleById);
-router.delete("/:roleId", deleteRole);
-router.patch("/:roleId", updateRoleValidation, handleValidation, updateRole);
+router.get("/", checkPermission("role", "view"), getAllRoles);
+router.post(
+  "/",
+  checkPermission("role", "create"),
+  createRoleValidation,
+  handleValidation,
+  createRole
+);
+router.get("/:roleId", checkPermission("role", "view"), getRoleById);
+router.delete("/:roleId", checkPermission("role", "delete"), deleteRole);
+router.patch(
+  "/:roleId",
+  checkPermission("role", "update"),
+  updateRoleValidation,
+  handleValidation,
+  updateRole
+);
 
 export default router;
 

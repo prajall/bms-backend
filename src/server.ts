@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import app from "./app";
 import mongoose from "mongoose";
 import { v2 as cloudinary } from "cloudinary";
+import { runCronJobs } from "./cron";
 
 dotenv.config();
 
@@ -22,3 +23,5 @@ app.listen(PORT, async () => {
     process.exit(1);
   }
 });
+
+runCronJobs();

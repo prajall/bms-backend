@@ -2,10 +2,13 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import { User } from "./user.model";
-import Customer  from "../customer/customer.model";
+import Customer from "../customer/customer.model";
 import Employee from "../employee/employee.model";
 import { Role } from "../role/role.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
+import { getConfigValue, readConfig } from "../../../utils/config.utils";
+import employeeModel from "../employee/employee.model";
+import customerModel from "../customer/customer.model";
 
 // Generate JWT token
 const generateToken = (id: any) => {
@@ -52,10 +55,31 @@ export const loginUser = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
+    const allowCustomerLogin = getConfigValue(
+      "business",
+      "customerLogin"
+    )?.enabled;
+
+    const allowEmployeeLogin = getConfigValue(
+      "business",
+      "employeeLogin"
+    )?.enabled;
     const user = await User.findOne({ email });
+    console.log(user);
 
     if (!user) {
       return apiError(res, 404, "User not found");
+    }
+    const isEmployee = await employeeModel.findOne({ user: user._id });
+
+    if (isEmployee && !allowEmployeeLogin) {
+      return apiError(res, 403, "Employee Login not allowed");
+    }
+    const isCustomer = await customerModel.findOne({ user: user._id });
+    console.log(isCustomer);
+
+    if (isCustomer && !allowCustomerLogin) {
+      return apiError(res, 403, "Employee Login not allowed");
     }
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
@@ -69,7 +93,7 @@ export const loginUser = async (req: Request, res: Response) => {
       delete filteredUser.password;
     }
 
-    // const userRole = await Role.findOne({ name: user.role });
+    // const userRole = await Role.findOne({ name: user.role });v
 
     const token = generateToken(user._id.toString());
 
@@ -148,20 +172,23 @@ export const getUserInfo = async (req: Request, res: Response) => {
 
     let additionalDetails: any = {};
     if (userDoc.type === "customer") {
-      const customerDetails = await Customer.findOne({ user: userDoc._id }).lean();
+      const customerDetails = await Customer.findOne({
+        user: userDoc._id,
+      }).lean();
       if (customerDetails) {
         additionalDetails.name = customerDetails.name;
       }
     } else if (userDoc.type === "employee") {
-      const employeeDetails = await Employee.findOne({ user: userDoc._id }).lean();
+      const employeeDetails = await Employee.findOne({
+        user: userDoc._id,
+      }).lean();
       if (employeeDetails) {
         additionalDetails.name = employeeDetails.name;
-        additionalDetails.role = userDoc.role; 
+        additionalDetails.role = userDoc.role;
       }
     } else {
       additionalDetails.name = "Super Admin";
     }
-
 
     // const filteredUser = user.toObject() as any;
     const filteredUser = {

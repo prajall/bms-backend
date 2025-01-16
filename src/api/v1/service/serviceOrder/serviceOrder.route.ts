@@ -11,16 +11,49 @@ import {
 } from "./serviceOrder.controller";
 import { serviceOrderValidation } from "./serviceOrder.validation";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
+import { checkPermission } from "../../../../middlewares/permissions.middleware";
 
 const router = express.Router();
 
-router.post("/", serviceOrderValidation, handleValidation, createServiceOrder);
-router.get("/", getAllServiceOrders);
-router.get("/mini-list", getMiniServiceOrders);
-router.get("/recurring", getNextRecurringOrders);
-router.get("/:id", getServiceOrderById);
-router.get("/orderid/:orderId", getServiceOrdersByOrderId);
-router.patch("/:id", updateServiceOrder);
-router.delete("/:id", deleteServiceOrder);
+router.post(
+  "/",
+  checkPermission("service_order", "create"),
+  serviceOrderValidation,
+  handleValidation,
+  createServiceOrder
+);
+router.get("/", checkPermission("service_order", "view"), getAllServiceOrders);
+router.get(
+  "/mini-list",
+  checkPermission("service_order", "view"),
+  getMiniServiceOrders
+);
+router.get(
+  "/recurring",
+  checkPermission("service_order", "view"),
+  getNextRecurringOrders
+);
+router.get(
+  "/:id",
+  checkPermission("service_order", "view"),
+  getServiceOrderById
+);
+router.get(
+  "/orderid/:orderId",
+  checkPermission("service_order", "view"),
+  getServiceOrdersByOrderId
+);
+router.patch(
+  "/:id",
+  checkPermission("service_order", "update"),
+  serviceOrderValidation,
+  handleValidation,
+  updateServiceOrder
+);
+router.delete(
+  "/:id",
+  checkPermission("service_order", "delete"),
+  deleteServiceOrder
+);
 
 export default router;

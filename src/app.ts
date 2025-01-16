@@ -27,6 +27,8 @@ import "./api/v1/employee/employee.model";
 import parseNestedFields from "./middlewares/parseFormData";
 import mongoose from "mongoose";
 import { upload } from "./utils/multer.util";
+import { authValidation } from "./middlewares/auth.middleware";
+import bodyParser from "body-parser";
 
 const app = express();
 app.use(express.static("public"));
@@ -34,8 +36,8 @@ app.use(express.static("public"));
 export default app;
 
 //middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 //To handle form data
@@ -71,17 +73,33 @@ app.use("/api/v1", apiRoutes);
 
 // normal routes
 apiRoutes.use("/user", upload.none(), userRoutes);
-apiRoutes.use("/installation", upload.none(), installationRoutes);
-apiRoutes.use("/role", upload.none(), roleRoutes);
-apiRoutes.use("/service", upload.none(), serviceRoutes);
-apiRoutes.use("/service-order", upload.none(), serviceOrderRoutes);
-apiRoutes.use("/service-billing", upload.none(), serviceBillingRoutes);
-apiRoutes.use("/pos", upload.none(), posRoutes);
-apiRoutes.use("/config", upload.none(), configRoutes);
-apiRoutes.use("/order", upload.none(), orderRoutes);
-apiRoutes.use("/report", upload.none(), reportRoutes);
+apiRoutes.use(
+  "/installation",
+  upload.none(),
+  authValidation,
+  installationRoutes
+);
+apiRoutes.use("/role", upload.none(), authValidation, roleRoutes);
+apiRoutes.use("/service", upload.none(), authValidation, serviceRoutes);
+apiRoutes.use(
+  "/service-order",
+  authValidation,
+  upload.none(),
+  serviceOrderRoutes
+);
+apiRoutes.use(
+  "/service-billing",
+  upload.none(),
+  authValidation,
+  serviceBillingRoutes
+);
+apiRoutes.use("/pos", upload.none(), authValidation, posRoutes);
+apiRoutes.use("/config", upload.none(), authValidation, configRoutes);
+apiRoutes.use("/order", upload.none(), authValidation, orderRoutes);
+apiRoutes.use("/report", upload.none(), authValidation, reportRoutes);
 apiRoutes.use(
   "/product-installation",
+  authValidation,
   upload.none(),
   productInstallationRoutes
 );
