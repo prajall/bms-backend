@@ -6,7 +6,7 @@ import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
 import { createBilling } from "../serviceBilling/serviceBilling.controller";
 import Service from "../service/service.model";
-import mongoose from "mongoose";
+import mongoose, { PipelineStage } from "mongoose";
 import BillingModel from "../serviceBilling/serviceBilling.model";
 
 interface ServiceOrder {
@@ -184,13 +184,12 @@ export const createServiceOrder = async (req: Request, res: Response) => {
             totalAmount: serviceCharge,
           },
         } as Request;
-      
+
         await createBilling(mockRequest, res);
-        
-    } catch (error) {
-      console.error("Error creating billing:", error);
-      return apiError(res, 500, "Failed to create billing");
-    }
+      } catch (error) {
+        console.error("Error creating billing:", error);
+        return apiError(res, 500, "Failed to create billing");
+      }
     }
 
     return apiResponse(
@@ -215,33 +214,74 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, parentServiceOrder } = req.query;
+    const { customer, parentServiceOrder, search } = req.query;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
 
-    const query: any = {};
+    const match: any = {};
+
+    // Filter by direct fields
     if (customer) {
-      query.customer = customer;
+      match.customer = new mongoose.Types.ObjectId(customer as string);
     }
     if (parentServiceOrder) {
-      query.parentServiceOrder = parentServiceOrder;
+      match.parentServiceOrder = new mongoose.Types.ObjectId(
+        parentServiceOrder as string
+      );
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    // Build search query
+    if (search) {
+      const searchRegex = new RegExp(search as string, "i");
+      match.$or = [
+        { "customer.name": searchRegex },
+        { "customer.phoneNo": searchRegex },
+        { "service.title": searchRegex },
+      ];
+    }
 
-    const serviceOrders = await ServiceOrder.find(query)
-      .populate({ path: "service", select: "-createdAt -updatedAt" })
-      .populate({ path: "customer", select: "name phoneNo address" })
-      .populate({
-        path: "serviceProvided",
-        model: ServiceProvided,
-        strictPopulate: false,
-      })
-      .sort({ date: -1 })
-      .skip(skip)
-      .limit(Number(limit));
+    const skip = (page - 1) * limit;
 
-    const totalOrders = await ServiceOrder.countDocuments(query);
+    // Aggregation pipeline
+    const pipeline: PipelineStage[] = [
+      //join customer and service
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: "$customer" },
+
+      {
+        $lookup: {
+          from: "services",
+          localField: "service",
+          foreignField: "_id",
+          as: "service",
+        },
+      },
+      { $unwind: "$service" },
+
+      // search filter
+      { $match: match },
+
+      // to fetch totalOrders in single query
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: -1 } }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
+
+    // Execute aggregation
+    const results = await ServiceOrder.aggregate(pipeline);
+
+    const serviceOrders = results[0]?.data || [];
+    const totalOrders = results[0]?.totalCount[0]?.count || 0;
 
     return apiResponse(res, 200, "Service orders retrieved successfully", {
       serviceOrders,
@@ -259,36 +299,39 @@ export const getMiniServiceOrders = async (req: Request, res: Response) => {
   try {
     const miniServiceOrders = await ServiceOrder.aggregate([
       {
-        $sort: { orderId: 1, createdAt: 1 }, 
+        $sort: { orderId: 1, createdAt: 1 },
       },
       {
         $group: {
-          _id: "$orderId", 
-          doc: { $first: "$$ROOT" }, 
+          _id: "$orderId",
+          doc: { $first: "$$ROOT" },
         },
       },
       {
-        $replaceRoot: { newRoot: "$doc" }, 
+        $replaceRoot: { newRoot: "$doc" },
       },
       {
-        $sort: { createdAt: -1 }, 
+        $sort: { createdAt: -1 },
       },
       {
         $project: {
           _id: 1,
           orderId: 1,
-        }, 
+        },
       },
     ]);
 
-    return apiResponse(res, 200, "Mini service orders fetched successfully", miniServiceOrders);
+    return apiResponse(
+      res,
+      200,
+      "Mini service orders fetched successfully",
+      miniServiceOrders
+    );
   } catch (error: any) {
     console.error("Error fetching mini service orders:", error);
     return apiError(res, 500, "Internal server error", error.message);
   }
 };
-
-
 
 export const getServiceOrderById = async (req: Request, res: Response) => {
   try {
@@ -333,7 +376,10 @@ export const getServiceOrderById = async (req: Request, res: Response) => {
   }
 };
 
-export const getServiceOrdersByOrderId = async (req: Request, res: Response) => {
+export const getServiceOrdersByOrderId = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { orderId } = req.params;
 
@@ -354,7 +400,11 @@ export const getServiceOrdersByOrderId = async (req: Request, res: Response) => 
       });
 
     if (serviceOrders.length === 0) {
-      return apiError(res, 404, "No service orders found with the given order ID");
+      return apiError(
+        res,
+        404,
+        "No service orders found with the given order ID"
+      );
     }
 
     // Get the customer information from the first service order (assuming all have the same customer)
@@ -385,7 +435,7 @@ export const getServiceOrdersByOrderId = async (req: Request, res: Response) => 
     // Fetch all previous billings related to the given orderId
     const previousBillings = await BillingModel.find({
       orderId,
-      type: "service", 
+      type: "service",
     }).sort({ date: 1 });
 
     // Calculate the total paid and remaining amounts across all service orders
@@ -413,14 +463,17 @@ export const getServiceOrdersByOrderId = async (req: Request, res: Response) => 
       remainingAmount,
     };
 
-    return apiResponse(res, 200, "Service orders retrieved successfully", response);
+    return apiResponse(
+      res,
+      200,
+      "Service orders retrieved successfully",
+      response
+    );
   } catch (error: any) {
     console.error("Error retrieving service orders:", error);
     return apiError(res, 500, "Internal server error", error.message);
   }
 };
-
-
 
 export const updateServiceOrder = async (req: Request, res: Response) => {
   try {

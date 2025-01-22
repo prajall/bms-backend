@@ -1,7 +1,29 @@
 import * as cron from "cron";
+import nodemailer from "nodemailer";
 import serviceOrderModel from "./api/v1/service/serviceOrder/serviceOrder.model";
-import { getConfigValue, readConfig } from "./utils/config.utils";
+import { readConfig } from "./utils/config.utils";
+import axios from "axios";
 
+const template =
+  "Hello {{customer.name}}. This is to notify you that you have a service order for {{orderId}} today.";
+
+//read notification time from business config
+const configHour =
+  readConfig("business").notifications?.upcommingOrder?.notificationTime?.hour;
+const configMinute =
+  readConfig("business").notifications?.upcommingOrder?.notificationTime
+    ?.minute;
+const configDaysBefore =
+  readConfig("business").notifications?.upcommingOrder?.daysBefore;
+
+console.log(configHour, configMinute, configDaysBefore);
+
+const notificationTimeHour =
+  configHour > 0 ? (configHour < 24 ? configHour : "9") : "9";
+const notificationTimeMinute =
+  configMinute > 0 ? (configMinute <= 59 ? configMinute : "00") : "00";
+
+//helper function to replace placeholders in the message template
 function replacePlaceholders(template: string, data: any, fallback: string) {
   const regex = /{{(.*?)}}/g;
 
@@ -17,68 +39,151 @@ function replacePlaceholders(template: string, data: any, fallback: string) {
   });
 }
 
+//send sms with sparrowsms api
+const sendSms = async (phoneNo: string, message: string) => {
+  try {
+    const sentMessage = await axios.post("http://api.sparrowsms.com/v2/sms", {
+      token: process.env.SMS_TOKEN,
+      from: "InfoAlert",
+      to: phoneNo,
+      text: message,
+    });
+    console.log("Message sent", sentMessage.data);
+  } catch (error: any) {
+    console.log("Error sending message", error.message);
+  }
+};
+
+const transporter = nodemailer.createTransport({
+  service: "gmail", // or your preferred service
+  auth: {
+    user: process.env.EMAIL_USER, // Your email
+    pass: process.env.EMAIL_PASS, // Your email password
+  },
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("Transporter Error:", error.message);
+  } else {
+    console.log("Server is ready to send emails");
+  }
+});
+
+// Helper function to send email
+const sendEmail = async (to: string, subject: string, text: string) => {
+  console.log(to, subject, text);
+  try {
+    const info = await transporter.sendMail({
+      from: `"Your Company"`,
+      to,
+      subject,
+      text,
+    });
+    console.log("Email sent:", info.messageId);
+  } catch (error: any) {
+    console.log("Error sending email:", error);
+  }
+};
+
+// Run cron jobs
+
 export const runCronJobs = async () => {
   console.log("running cron jobs");
 
-  //read notification time from business config
-  const configHour =
-    readConfig("business").notifications?.upcommingOrder?.notificationTime
-      ?.hour;
-  const configMinute =
-    readConfig("business").notifications?.upcommingOrder?.notificationTime
-      ?.minute;
-
-  const notificationTimeHour =
-    configHour > 0 ? (configHour < 24 ? configHour : "9") : "9";
-  const notificationTimeMinute =
-    configMinute > 0 ? (configMinute <= 59 ? configMinute : "00") : "00";
-
-  // initialize cron job each day
   new cron.CronJob(
-    `0 ${notificationTimeMinute} ${notificationTimeHour} * * * `, // time to send notification taken from business config
+    // Daily time to send notification taken from business config
+    `0 ${notificationTimeMinute} ${notificationTimeHour} * * * `,
     async () => {
-      // Fetch all orders whose next Service date is today along with customer details.
-      const response = await serviceOrderModel
-        .find({
-          date: new Date().toISOString().split("T")[0],
-        })
-        .populate("customer");
-
-      // get phone numbers of the customer.
-      const todaysOrder: any = response.map((order) => order.toObject());
-      const phoneNumbers = todaysOrder.map(
-        (order: any) => order.customer?.phoneNo
-      );
-      console.log(phoneNumbers);
-
-      // send message/mail to all the customer
-
-      const template =
-        "Hello {{customer.name}}. This is to notify you that you have a service order for {{orderId}} at {{date}}.";
-      todaysOrder.forEach((order: any) => {
-        console.log(
-          "Sending Message to :",
-          order.customer?.phoneNo || "No phone"
-        );
-        const sms_message = replacePlaceholders(template, order, "Customer");
-        console.log(sms_message);
-      });
+      sendTodaysOrders();
+      sendUpcommingOrders();
     },
     null,
     true,
-    "Asia/Kathmandu" // Optional: Timezone
-  );
-
-  //send notificaction to employee
-  new cron.CronJob(
-    "0 0 9 * * *", // everyday at 9am
-    async () => {
-      // Fetch all orders whose next Service date is today along with employee details.
-      // get phone numbers of the employee.
-      // send message/mail to all the employee
-    },
-    null,
-    true,
-    "Asia/Kathmandu" // Optional: Timezone
+    "Asia/Kathmandu"
   );
 };
+
+async function sendTodaysOrders() {
+  // Fetch all orders whose next Service date is today along with customer details.
+  const response = await serviceOrderModel
+    .find({
+      date: new Date().toISOString().split("T")[0],
+    })
+    .populate({ path: "customer", populate: "user", select: "-password" });
+
+  // get phone numbers of the customer.
+  const todaysOrder: any = response.map((order) => {
+    const plainOrder = order.toObject(); // Convert Mongoose document to plain object
+    if (plainOrder.date) {
+      plainOrder.date = new Date(plainOrder.date)
+        .toISOString()
+        .split("T")[0] as any;
+    }
+    return plainOrder;
+  });
+
+  const sentPhoneNumbers = new Set();
+
+  // send message/mail to all the customer
+  todaysOrder.forEach((order: any) => {
+    const phoneNo = order.customer?.phoneNo || "";
+
+    if (phoneNo && !sentPhoneNumbers.has(phoneNo)) {
+      sentPhoneNumbers.add(phoneNo);
+
+      const message = replacePlaceholders(template, order, "Customer");
+      console.log("Sending Message to:", phoneNo);
+      console.log(message);
+
+      const customerEmail = order.customer?.user?.email;
+
+      // sendSms(phoneNo, message);
+      if (customerEmail) {
+        // sendEmail(customerEmail, "Service Order Notification", message);
+      }
+    }
+  });
+}
+
+// send upcomming orders notification (configurable in business config)
+async function sendUpcommingOrders() {
+  const upcommingDay = new Date();
+  upcommingDay.setDate(upcommingDay.getDate() + configDaysBefore);
+
+  const response = await serviceOrderModel
+    .find({
+      date: upcommingDay,
+    })
+    .populate("customer");
+
+  // get phone numbers of the customer.
+  const upcommingOrder: any = response.map((order) => {
+    const plainOrder = order.toObject(); // Convert Mongoose document to plain object
+    if (plainOrder.date) {
+      plainOrder.date = new Date(plainOrder.date)
+        .toISOString()
+        .split("T")[0] as any;
+    }
+    return plainOrder;
+  });
+  const phoneNumbers = upcommingOrder
+    .map((order: any) => order.customer?.phoneNo)
+    .filter((phoneNo: string) => phoneNo !== undefined);
+  console.log(phoneNumbers);
+
+  // send message/mail to all the customer
+  upcommingOrder.forEach((order: any) => {
+    console.log("Sending Message to :", order.customer?.phoneNo || "No phone");
+    const sms_message = replacePlaceholders(template, order, "Customer");
+    console.log(sms_message);
+    const phoneNo = order.customer?.phoneNo || "";
+    if (phoneNo) {
+      // sendSms(phoneNo, sms_message);
+      console.log("send message to", phoneNo);
+    }
+  });
+}
+
+sendTodaysOrders();
+// sendUpcommingOrders();

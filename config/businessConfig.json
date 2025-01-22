@@ -34,8 +34,8 @@
       "sms": true,
       "daysBefore": 7,
       "notificationTime": {
-        "hour": 14,
-        "minute": 29
+        "hour": 16,
+        "minute": 11
       }
     },
     "orderCancelled": {

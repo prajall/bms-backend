@@ -80,7 +80,7 @@ apiRoutes.use(
   installationRoutes
 );
 apiRoutes.use("/role", upload.none(), authValidation, roleRoutes);
-apiRoutes.use("/service", upload.none(), authValidation, serviceRoutes);
+apiRoutes.use("/service", upload.none(), serviceRoutes);
 apiRoutes.use(
   "/service-order",
   authValidation,

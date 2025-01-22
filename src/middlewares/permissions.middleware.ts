@@ -26,7 +26,6 @@ export const checkPermission = (module: string, action: string) => {
       }
 
       if (roleDoc.name === "master") {
-        next();
         return;
       }
 
@@ -54,6 +53,7 @@ export const checkPermission = (module: string, action: string) => {
 };
 
 // Update this to use the new user model
+
 // export const adminChecker = async (
 //   req: Request,
 //   res: Response,

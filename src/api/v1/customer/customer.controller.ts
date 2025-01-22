@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import Customer from "./customer.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
-import mongoose from "mongoose";
+import mongoose, { PipelineStage } from "mongoose";
 import { User } from "../user/user.model";
 import { uploadOnCloudinary } from "../../../utils/cloudinary.util";
 
@@ -78,43 +78,77 @@ export const getAllCustomers = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const sortField = (req.query.sortField as string) || "createdAt";
     const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
-    const search = (req.query.search as string) || ""; // Get the search query
-
+    const search = req.query.search as string;
     const skip = (page - 1) * limit;
 
-    // Build the filter based on search
-    const filter = search
-      ? {
-          name: { $regex: search, $options: "i" }, // Case-insensitive regex search on name
-        }
-      : {};
+    const match: any = {};
 
-    // Get the total count of customers matching the search
-    const totalCustomers = await Customer.countDocuments(filter);
-    const totalPages = Math.ceil(totalCustomers / limit);
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      match.$or = [
+        { "user.email": searchRegex },
+        { "user.name": searchRegex },
+        { "user.phoneNo": searchRegex },
+        { name: searchRegex },
+        { phoneNo: searchRegex },
+      ];
+    }
 
-    // Fetch the customers with pagination and search
-    const customers = await Customer.find(filter)
-      .populate({
-        path: "user",
-        select: "email password",
-      })
-      .sort({ [sortField]: sortOrder })
-      .skip(skip)
-      .limit(limit);
+    // Aggregation pipeline
+    const pipeline: PipelineStage[] = [
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      {
+        $project: {
+          "user.password": 0,
+          "user.createdAt": 0,
+          "user.updatedAt": 0,
+        },
+      },
+
+      // Apply the search filter
+      { $match: match },
+
+      // Use $facet for pagination and total count
+      {
+        $facet: {
+          data: [
+            { $sort: { [sortField]: sortOrder } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
+
+    // Execute the aggregation pipeline
+    const results = await Customer.aggregate(pipeline);
+
+    const customers = results[0]?.data || [];
+    const totalCustomers = results[0]?.totalCount[0]?.count || 0;
 
     return apiResponse(res, 200, "Customers retrieved successfully", {
       pagination: {
         currentPage: page,
-        totalPages,
+        totalPages: Math.ceil(totalCustomers / limit),
         totalCustomers,
         limit,
       },
       customers,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get all customers error:", error);
-    return apiError(res, 500, "Failed to fetch customers", error);
+    return apiError(res, 500, "Failed to fetch customers", error.message);
   }
 };
 

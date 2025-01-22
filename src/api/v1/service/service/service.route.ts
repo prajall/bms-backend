@@ -19,8 +19,8 @@ router.post(
   handleValidation,
   createService
 );
-router.get("/", checkPermission("service", "view"), getAllServices);
-router.get("/:id", checkPermission("service", "view"), getServiceById);
+router.get("/", getAllServices);
+router.get("/:id", getServiceById);
 router.patch(
   "/:id",
   checkPermission("service", "update"),

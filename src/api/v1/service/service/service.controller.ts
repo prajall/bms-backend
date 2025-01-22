@@ -33,11 +33,15 @@ export const getAllServices = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+    const sortField = (req.query.sortField as string) || "createdAt";
+    const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
     const availability = req.query.availability;
-
+    const search = req.query.search as string;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
+
+    // Filter by availability
     if (availability !== undefined) {
       filter.availability =
         availability === "unavailable" || availability === "false"
@@ -45,10 +49,26 @@ export const getAllServices = async (req: Request, res: Response) => {
           : "available";
     }
 
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      filter.$or = [
+        { title: searchRegex },
+        { serviceType: searchRegex },
+        { workDetail: searchRegex },
+        { additionalNotes: searchRegex },
+      ];
+    }
+
+    // Get the total count of documents matching the filter
     const totalServices = await Service.countDocuments(filter);
     const totalPages = Math.ceil(totalServices / limit);
 
-    const services = await Service.find(filter).skip(skip).limit(limit);
+    // Fetch the services with pagination and sorting
+    const services = await Service.find(filter)
+      .sort({ [sortField]: sortOrder })
+      .skip(skip)
+      .limit(limit);
 
     return apiResponse(res, 200, "Services retrieved successfully", {
       services,

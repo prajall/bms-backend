@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import Employee from "../employee/employee.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
-import mongoose from "mongoose";
+import mongoose, { PipelineStage } from "mongoose";
 import { User } from "../user/user.model";
 
 export const createEmployee = async (req: Request, res: Response) => {
@@ -61,29 +61,74 @@ export const getAllEmployees = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const sortField = (req.query.sortField as string) || "createdAt";
     const sortOrder = (req.query.sortOrder as string) === "asc" ? 1 : -1;
+    const search = req.query.search as string;
     const skip = (page - 1) * limit;
 
-    const totalEmployees = await Employee.countDocuments({});
-    const totalPages = Math.ceil(totalEmployees / limit);
+    const match: any = {};
 
-    const employees = await Employee.find({})
-      .populate("role", "name")
-      .sort({ [sortField]: sortOrder })
-      .skip(skip)
-      .limit(limit);
+    // Add search filter
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      match.$or = [
+        { "user.email": searchRegex },
+        { "user.name": searchRegex },
+        { contactNo: searchRegex },
+      ];
+    }
+
+    // Aggregation pipeline
+    const pipeline: PipelineStage[] = [
+      // Join with User collection
+      {
+        $lookup: {
+          from: "users", // The name of the User collection in MongoDB
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      }, 
+      { $unwind: "$user" }, // Unwind the joined User document
+
+      {
+        $project: {
+          "user.password": 0,
+          "user.createdAt": 0, // Optionally exclude other fields
+          "user.updatedAt": 0, // Optionally exclude other fields
+        },
+      },
+
+      { $match: match },
+
+      {
+        $facet: {
+          data: [
+            { $sort: { [sortField]: sortOrder } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
+
+    // Execute the aggregation pipeline
+    const results = await Employee.aggregate(pipeline);
+
+    const employees = results[0]?.data || [];
+    const totalEmployees = results[0]?.totalCount[0]?.count || 0;
 
     return apiResponse(res, 200, "Employees retrieved successfully", {
       pagination: {
         currentPage: page,
-        totalPages,
+        totalPages: Math.ceil(totalEmployees / limit),
         totalEmployees,
         limit,
       },
       employees,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get all employees error:", error);
-    return apiError(res, 500, "Failed to fetch employees", error);
+    return apiError(res, 500, "Failed to fetch employees", error.message);
   }
 };
 
@@ -95,9 +140,11 @@ export const getEmployeeDetails = async (req: Request, res: Response) => {
       return apiError(res, 400, "Invalid employee ID format");
     }
 
-    const employee = await Employee.findById(id)
-      .populate({ path: "user", strictPopulate: false })
-      // .populate({ path: "role", select: "_id", strictPopulate: false });
+    const employee = await Employee.findById(id).populate({
+      path: "user",
+      strictPopulate: false,
+    });
+    // .populate({ path: "role", select: "_id", strictPopulate: false });
 
     if (!employee) {
       return apiError(res, 404, "Employee not found");
@@ -124,7 +171,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       return apiError(res, 404, "Employee not found");
     }
 
-    const user: any = employee.user; 
+    const user: any = employee.user;
 
     if (email || password || role) {
       // console.log(role);

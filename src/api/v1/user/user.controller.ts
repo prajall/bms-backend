@@ -158,7 +158,7 @@ export const getUserInfo = async (req: Request, res: Response) => {
       return apiError(res, 404, "User not found");
     }
 
-    const userQuery = User.findById(user._id).lean();
+    const userQuery = User.findById(user._id);
 
     if (user.type === "employee") {
       userQuery.populate("role");
