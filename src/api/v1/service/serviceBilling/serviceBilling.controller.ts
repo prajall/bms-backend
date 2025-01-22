@@ -9,8 +9,8 @@ export const createBilling = async (req: Request, res: Response) => {
   const parsedPaidAmount = parseInt(paidAmount.toString()) || 0;
 
   try {
-    if (parsedPaidAmount <= 0) {
-      return apiError(res, 400, "Paid amount must be greater than 0");
+    if (parsedPaidAmount < 0) {
+      return apiError(res, 400, "Paid amount must be positive integer");
     }
 
     // Validate date
@@ -29,7 +29,9 @@ export const createBilling = async (req: Request, res: Response) => {
       { $inc: { sequenceValue: 1 } },
       { new: true, upsert: true }
     );
-    const newInvoice = `INV-${counter.sequenceValue.toString().padStart(5, "0")}`;
+    const newInvoice = `INV-${counter.sequenceValue
+      .toString()
+      .padStart(5, "0")}`;
 
     // Validate serviceOrders and fetch their details
     const serviceOrderDocs = await Promise.all(
@@ -40,7 +42,9 @@ export const createBilling = async (req: Request, res: Response) => {
           .populate("service", "title");
 
         if (!doc) {
-          throw new Error(`Service order not found: ${serviceOrder.serviceOrder}`);
+          throw new Error(
+            `Service order not found: ${serviceOrder.serviceOrder}`
+          );
         }
 
         return {
@@ -58,12 +62,20 @@ export const createBilling = async (req: Request, res: Response) => {
       return sum + amount;
     }, 0);
 
-    const totalPaid = await serviceOrderDocs.reduce(async (sumPromise, { serviceOrderDoc }) => {
-      const sum = await sumPromise; // Accumulate the sum
-      const previousBillings = await Billing.find({ serviceOrder: serviceOrderDoc._id });
-      const totalForOrder = previousBillings.reduce((subtotal, billing) => subtotal + billing.paidAmount, 0);
-      return sum + totalForOrder;
-    }, Promise.resolve(0));
+    const totalPaid = await serviceOrderDocs.reduce(
+      async (sumPromise, { serviceOrderDoc }) => {
+        const sum = await sumPromise; // Accumulate the sum
+        const previousBillings = await Billing.find({
+          serviceOrder: serviceOrderDoc._id,
+        });
+        const totalForOrder = previousBillings.reduce(
+          (subtotal, billing) => subtotal + billing.paidAmount,
+          0
+        );
+        return sum + totalForOrder;
+      },
+      Promise.resolve(0)
+    );
 
     const updatedTotalPaid = totalPaid + parsedPaidAmount;
 
@@ -94,11 +106,12 @@ export const createBilling = async (req: Request, res: Response) => {
       paidAmount: parsedPaidAmount,
       totalPaid: updatedTotalPaid,
       totalAmount,
-      taxableAmount, 
-      discount, 
+      taxableAmount,
+      discount,
       discountAmount,
       tax,
-      taxAmount, 
+      type: "service",
+      taxAmount,
       finalTotal,
     });
 
@@ -122,14 +135,17 @@ export const createBilling = async (req: Request, res: Response) => {
         populate: { path: "service", select: "title" },
       });
 
-    return apiResponse(res, 201, "Billing created successfully", populatedBilling);
+    return apiResponse(
+      res,
+      201,
+      "Billing created successfully",
+      populatedBilling
+    );
   } catch (error: any) {
     console.error("Error creating billing:", error);
     return apiError(res, 500, "Error creating billing", error.message);
   }
 };
-
-
 
 export const getBillings = async (req: Request, res: Response) => {
   const { customerId, serviceOrders, date } = req.body;
@@ -145,7 +161,11 @@ export const getBillings = async (req: Request, res: Response) => {
       filter.customer = customerId;
     }
     if (serviceOrders && serviceOrders.length > 0) {
-      filter["serviceOrders.serviceOrder"] = { $in: serviceOrders.map((order: { serviceOrder: string }) => order.serviceOrder) };
+      filter["serviceOrders.serviceOrder"] = {
+        $in: serviceOrders.map(
+          (order: { serviceOrder: string }) => order.serviceOrder
+        ),
+      };
     }
 
     if (date) {
@@ -242,15 +262,25 @@ export const getBillingById = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateBilling = async (req: Request, res: Response) => {
   const { billingId } = req.params;
-  const { serviceOrders = [], totalAmount, paidAmount, discount, tax, date, customer } = req.body;
+  const {
+    serviceOrders = [],
+    totalAmount,
+    paidAmount,
+    discount,
+    tax,
+    date,
+    customer,
+  } = req.body;
 
   try {
     const billing = await Billing.findById(billingId).populate({
       path: "serviceOrders.serviceOrder",
-      populate: { path: "customer service", select: "name phoneNo address title" },
+      populate: {
+        path: "customer service",
+        select: "name phoneNo address title",
+      },
     });
 
     if (!billing) {
@@ -288,7 +318,9 @@ export const updateBilling = async (req: Request, res: Response) => {
           .populate("service", "title");
 
         if (!doc) {
-          throw new Error(`Service order not found: ${serviceOrder.serviceOrder}`);
+          throw new Error(
+            `Service order not found: ${serviceOrder.serviceOrder}`
+          );
         }
 
         return {
@@ -300,18 +332,23 @@ export const updateBilling = async (req: Request, res: Response) => {
     );
 
     // Replace the DocumentArray field properly
-    billing.serviceOrders.splice(0, billing.serviceOrders.length); 
-    billing.serviceOrders.push(...serviceOrderDocs); 
+    billing.serviceOrders.splice(0, billing.serviceOrders.length);
+    billing.serviceOrders.push(...serviceOrderDocs);
 
     // Calculate totalAmount based on the new serviceOrders
-    const totalAmount = await serviceOrderDocs.reduce(async (sumPromise, serviceOrder) => {
-      const sum = await sumPromise; // Ensure proper chaining
-      const serviceDoc: any = await serviceOrderModel.findById(serviceOrder.serviceOrder);
-      const amount =
-        serviceDoc.serviceCharge -
-        (serviceDoc.discount || 0) * (serviceDoc.serviceCharge / 100);
-      return sum + amount;
-    }, Promise.resolve(0));
+    const totalAmount = await serviceOrderDocs.reduce(
+      async (sumPromise, serviceOrder) => {
+        const sum = await sumPromise; // Ensure proper chaining
+        const serviceDoc: any = await serviceOrderModel.findById(
+          serviceOrder.serviceOrder
+        );
+        const amount =
+          serviceDoc.serviceCharge -
+          (serviceDoc.discount || 0) * (serviceDoc.serviceCharge / 100);
+        return sum + amount;
+      },
+      Promise.resolve(0)
+    );
 
     const discountAmount = (totalAmount * discount) / 100;
     const taxableAmount = totalAmount - discountAmount;
@@ -320,7 +357,8 @@ export const updateBilling = async (req: Request, res: Response) => {
 
     // Calculate total paid and remaining amount
     const previousTotalPaid = billing.totalPaid - billing.paidAmount;
-    const updatedTotalPaid = previousTotalPaid + (paidAmount || billing.paidAmount);
+    const updatedTotalPaid =
+      previousTotalPaid + (paidAmount || billing.paidAmount);
     const remainingAmount = finalTotal - updatedTotalPaid;
 
     // Update payment status
@@ -347,7 +385,9 @@ export const updateBilling = async (req: Request, res: Response) => {
 
     await Promise.all(
       serviceOrderDocs.map(async (serviceOrder) => {
-        const serviceOrderDoc = await serviceOrderModel.findById(serviceOrder.serviceOrder);
+        const serviceOrderDoc = await serviceOrderModel.findById(
+          serviceOrder.serviceOrder
+        );
         if (serviceOrderDoc) {
           serviceOrderDoc.paymentStatus = paymentStatus;
           await serviceOrderDoc.save();

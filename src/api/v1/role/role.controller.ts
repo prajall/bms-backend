@@ -99,14 +99,13 @@ export const deleteRole = async (req: Request, res: Response) => {
       return apiError(res, 403, "Cannot delete Admin, Master or User role");
     }
 
-    const isUserAssociated = await User.exists({ role: role.name });
+    const isUserAssociated = await User.exists({ role: role._id });
 
-    console.log("Is user associated:", isUserAssociated);
     if (isUserAssociated) {
       return apiError(
         res,
         400,
-        "Cannot delete role, Users are associated with this role"
+        "Cannot delete, Users are associated with this role"
       );
     }
 

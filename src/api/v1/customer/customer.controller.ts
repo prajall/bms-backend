@@ -11,6 +11,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const image = req.file;
+    console.log("Image: ", image);
 
     console.log("body:", req.body);
 

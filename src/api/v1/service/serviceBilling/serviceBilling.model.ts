@@ -20,35 +20,35 @@ const billingSchema = new mongoose.Schema(
     serviceOrders: [
       {
         serviceOrder: {
-          type: mongoose.Schema.Types.ObjectId, 
+          type: mongoose.Schema.Types.ObjectId,
           ref: "ServiceOrder",
           required: true,
         },
         orderId: {
-          type: String, 
+          type: String,
           required: true,
         },
         order: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Order",
-      },
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Order",
+        },
       },
     ],
     posOrders: [
       {
         posOrder: {
-          type: mongoose.Schema.Types.ObjectId, 
+          type: mongoose.Schema.Types.ObjectId,
           ref: "ServiceOrder",
           required: true,
         },
         orderId: {
-          type: String, 
+          type: String,
           required: true,
         },
         order: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Order",
-      },
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Order",
+        },
       },
     ],
     type: {
@@ -85,12 +85,12 @@ const billingSchema = new mongoose.Schema(
     discountAmount: {
       type: Number,
       required: true,
-      default: 0
+      default: 0,
     },
     taxableAmount: {
       type: Number,
       required: true,
-      default: 0
+      default: 0,
     },
     tax: {
       type: Number,
@@ -100,7 +100,7 @@ const billingSchema = new mongoose.Schema(
     taxAmount: {
       type: Number,
       required: true,
-      default: 0
+      default: 0,
     },
     finalTotal: {
       type: Number,

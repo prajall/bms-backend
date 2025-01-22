@@ -157,7 +157,7 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
     session.endSession();
 
-    if (paidAmount) {
+    if (paidAmount && paidAmount > 0) {
       try {
         if (!serviceOrder || !serviceOrder[0]?._id) {
           await session.abortTransaction();
@@ -186,6 +186,7 @@ export const createServiceOrder = async (req: Request, res: Response) => {
         } as Request;
 
         await createBilling(mockRequest, res);
+        return;
       } catch (error) {
         console.error("Error creating billing:", error);
         return apiError(res, 500, "Failed to create billing");

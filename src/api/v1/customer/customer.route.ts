@@ -27,7 +27,7 @@ router.get("/mini-list", getAllCustomerList);
 router.get("/:id", getCustomerDetails);
 router.patch(
   "/:id",
-  upload.none(),
+  upload.single("image"),
   parseNestedFields,
   customerValidation,
   handleValidation,

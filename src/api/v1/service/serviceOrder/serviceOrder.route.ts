@@ -12,6 +12,7 @@ import {
 import { serviceOrderValidation } from "./serviceOrder.validation";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
 import { checkPermission } from "../../../../middlewares/permissions.middleware";
+import { upload } from "../../../../utils/multer.util";
 
 const router = express.Router();
 
