@@ -4,10 +4,10 @@ import ServiceProvided from "../serviceProvided/serviceProvided.model";
 import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
-import { createBilling } from "../serviceBilling/serviceBilling.controller";
+import { createBilling } from "../../billing/billing.controller";
 import Service from "../service/service.model";
 import mongoose, { PipelineStage } from "mongoose";
-import BillingModel from "../serviceBilling/serviceBilling.model";
+import BillingModel from "../../billing/billing.model";
 
 interface ServiceOrder {
   order: string;

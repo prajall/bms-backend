@@ -265,7 +265,7 @@ export const updateUserRole = async (req: Request, res: Response) => {
 
     // Only "master" can change an "admin" role
     if (
-      //@ts-ignore
+      // @ts-ignore
       userToUpdate.role?.name?.toLowerCase() === "admin" &&
       user.role?.name?.toLowerCase() !== "master"
     ) {

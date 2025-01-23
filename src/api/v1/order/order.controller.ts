@@ -5,7 +5,7 @@ import { apiError, apiResponse } from "../../../utils/response.util";
 import { getorderId } from "./order.function";
 import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import POSModel from "../pos/pos.model";
-import ServiceBilling from "../service/serviceBilling/serviceBilling.model";
+import ServiceBilling from "../billing/billing.model";
 
 const PREFIX_MAPPING: { [key: string]: string } = {
   service: "SRV",

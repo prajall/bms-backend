@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Billing from "../service/serviceBilling/serviceBilling.model";
+import Billing from "../billing/billing.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
 
 export const generateBillingReport = async (req: Request, res: Response) => {
@@ -48,19 +48,28 @@ export const generateBillingReport = async (req: Request, res: Response) => {
       .exec();
 
     // Calculate totals
-    const totalAmount = billings.reduce((sum, record) => sum + record.totalAmount, 0);
-    const totalPaid = billings.reduce((sum, record) => sum + record.totalPaid, 0);
+    const totalAmount = billings.reduce(
+      (sum, record) => sum + record.totalAmount,
+      0
+    );
+    const totalPaid = billings.reduce(
+      (sum, record) => sum + record.totalPaid,
+      0
+    );
     const remainingAmount = totalAmount - totalPaid;
-    const finalTotal = billings.reduce((sum, record) => sum + record.finalTotal, 0);
+    const finalTotal = billings.reduce(
+      (sum, record) => sum + record.finalTotal,
+      0
+    );
 
     // Return the report data with totals
     return apiResponse(res, 200, "Report generated successfully", {
-        billings,
-        totalBillings: billings.length,
-        totalAmount,
-        totalPaid,
-        remainingAmount,
-        finalTotal,
+      billings,
+      totalBillings: billings.length,
+      totalAmount,
+      totalPaid,
+      remainingAmount,
+      finalTotal,
     });
   } catch (error: any) {
     console.error("Error generating report:", error);

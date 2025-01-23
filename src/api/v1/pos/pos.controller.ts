@@ -3,7 +3,7 @@ import POS from "./pos.model";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import Service from "../service/service/service.model";
-import Billing from "../service/serviceBilling/serviceBilling.model";
+import Billing from "../billing/billing.model";
 import { createOrder } from "../order/order.controller";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
@@ -163,7 +163,6 @@ export const getAllPOSList = async (req: Request, res: Response) => {
   }
 };
 
-
 // Get a single POS record by ID
 export const getPOSById = async (req: Request, res: Response) => {
   try {
@@ -181,7 +180,7 @@ export const getPOSById = async (req: Request, res: Response) => {
     }
 
     const pastBillings = await Billing.find({
-      type: "pos", 
+      type: "pos",
       "posOrders.order": id,
     })
       .populate("customer", "name email")
@@ -189,11 +188,21 @@ export const getPOSById = async (req: Request, res: Response) => {
       .sort({ date: 1 });
 
     if (pastBillings.length === 0) {
-      return apiError(res, 404, "No billing records found for the given POS ID");
+      return apiError(
+        res,
+        404,
+        "No billing records found for the given POS ID"
+      );
     }
 
-    const totalPaid = pastBillings.reduce((sum, billing) => sum + billing.paidAmount, 0);
-    const totalAmount = pastBillings.reduce((sum, billing) => sum + billing.totalAmount, 0);
+    const totalPaid = pastBillings.reduce(
+      (sum, billing) => sum + billing.paidAmount,
+      0
+    );
+    const totalAmount = pastBillings.reduce(
+      (sum, billing) => sum + billing.totalAmount,
+      0
+    );
     const remainingAmount = totalAmount - totalPaid;
 
     // Prepare the response object

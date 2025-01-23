@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import Billing from "./serviceBilling.model";
-import { apiError, apiResponse } from "../../../../utils/response.util";
-import serviceOrderModel from "../serviceOrder/serviceOrder.model";
-import Counter from "../../models/Counter";
+import Billing from "./billing.model";
+import { apiError, apiResponse } from "../../../utils/response.util";
+import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
+import Counter from "../models/Counter";
 
 export const createBilling = async (req: Request, res: Response) => {
   const { serviceOrders, paidAmount, date, discount = 0, tax = 0 } = req.body;

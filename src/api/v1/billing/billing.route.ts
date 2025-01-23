@@ -5,10 +5,10 @@ import {
   getBillingById,
   updateBilling,
   deleteBilling,
-} from "./serviceBilling.controller";
-import { validateBilling } from "./serviceBilling.validation";
-import { handleValidation } from "../../../../middlewares/validation.middleware";
-import { checkPermission } from "../../../../middlewares/permissions.middleware";
+} from "./billing.controller";
+import { validateBilling } from "./billing.validation";
+import { handleValidation } from "../../../middlewares/validation.middleware";
+import { checkPermission } from "../../../middlewares/permissions.middleware";
 
 const router = express.Router();
 
