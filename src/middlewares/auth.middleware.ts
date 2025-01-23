@@ -15,6 +15,7 @@ export const authValidation = async (
 ) => {
   try {
     const token = req.cookies?.token;
+    console.log("Token: ", token);
 
     if (!token) {
       return apiError(res, 401, "Authentication failed. Please Login first");

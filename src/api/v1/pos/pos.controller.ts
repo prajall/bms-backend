@@ -5,6 +5,7 @@ import ServiceOrder from "../service/serviceOrder/serviceOrder.model";
 import Service from "../service/service/service.model";
 import Billing from "../billing/billing.model";
 import { createOrder } from "../order/order.controller";
+import { createBilling } from "../billing/billing.controller";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
 // Create a new POS record
@@ -89,6 +90,27 @@ export const createPOS = async (req: Request, res: Response) => {
     if (!pos) {
       return apiError(res, 400, "Failed to create POS record");
     }
+
+    const mockRequest = {
+      body: {
+        posOrders: [
+          {
+            posOrder: pos._id,
+            orderId: pos.orderId,
+            order: pos.order,
+          },
+        ],
+        paidAmount: pos.totalPrice,
+        date: new Date(),
+        customer,
+        discount,
+        totalAmount: totalPrice,
+        type: "pos",
+      },
+    } as Request;
+
+    await createBilling(mockRequest, res);
+    return;
 
     return apiResponse(res, 201, "POS record created successfully", {
       pos,

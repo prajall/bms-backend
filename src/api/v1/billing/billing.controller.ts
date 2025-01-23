@@ -2,15 +2,25 @@ import { Request, Response } from "express";
 import Billing from "./billing.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
 import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
+import posOrderModel from "../pos/pos.model";
 import Counter from "../models/Counter";
 
 export const createBilling = async (req: Request, res: Response) => {
-  const { serviceOrders, paidAmount, date, discount = 0, tax = 0 } = req.body;
+  const {
+    serviceOrders = [],
+    posOrders = [],
+    paidAmount,
+    date,
+    discount = 0,
+    tax = 0,
+    type = "service",
+  } = req.body;
+
   const parsedPaidAmount = parseInt(paidAmount.toString()) || 0;
 
   try {
     if (parsedPaidAmount < 0) {
-      return apiError(res, 400, "Paid amount must be positive integer");
+      return apiError(res, 400, "Paid amount must be a positive integer");
     }
 
     // Validate date
@@ -23,7 +33,7 @@ export const createBilling = async (req: Request, res: Response) => {
       return apiError(res, 400, "Future dates are not allowed");
     }
 
-    // Generate unique invoice number using Counter with type "billing"
+    // Generate unique invoice number
     const counter = await Counter.findOneAndUpdate(
       { sequenceName: "invoice", type: "billing" },
       { $inc: { sequenceValue: 1 } },
@@ -33,40 +43,61 @@ export const createBilling = async (req: Request, res: Response) => {
       .toString()
       .padStart(5, "0")}`;
 
-    // Validate serviceOrders and fetch their details
-    const serviceOrderDocs = await Promise.all(
-      serviceOrders.map(async (serviceOrder: any) => {
-        const doc = await serviceOrderModel
-          .findById(serviceOrder.serviceOrder)
-          .populate("customer", "name phoneNo address")
-          .populate("service", "title");
+    let customer;
+    let totalAmount = 0;
+    let orderDocs = [];
 
-        if (!doc) {
-          throw new Error(
-            `Service order not found: ${serviceOrder.serviceOrder}`
-          );
-        }
+    if (type === "service") {
+      // Process serviceOrders
+      orderDocs = await Promise.all(
+        serviceOrders.map(async (order: any) => {
+          const doc = await serviceOrderModel
+            .findById(order.serviceOrder)
+            .populate("customer", "name phoneNo address")
+            .populate("service", "title");
 
-        return {
-          serviceOrderDoc: doc,
-          ...serviceOrder,
-        };
-      })
-    );
+          if (!doc) {
+            throw new Error(`Service order not found: ${order.serviceOrder}`);
+          }
 
-    const customer = serviceOrderDocs[0].serviceOrderDoc.customer; // Assuming all service orders belong to the same customer
-    const totalAmount = serviceOrderDocs.reduce((sum, { serviceOrderDoc }) => {
-      const amount =
-        serviceOrderDoc.serviceCharge -
-        (serviceOrderDoc.discount || 0) * (serviceOrderDoc.serviceCharge / 100);
-      return sum + amount;
-    }, 0);
+          return { orderDoc: doc, ...order };
+        })
+      );
+      customer = orderDocs[0]?.orderDoc?.customer;
 
-    const totalPaid = await serviceOrderDocs.reduce(
-      async (sumPromise, { serviceOrderDoc }) => {
-        const sum = await sumPromise; // Accumulate the sum
+      totalAmount = orderDocs.reduce((sum, { orderDoc }) => {
+        const amount =
+          orderDoc.serviceCharge -
+          (orderDoc.discount || 0) * (orderDoc.serviceCharge / 100);
+        return sum + amount;
+      }, 0);
+    } else if (type === "pos") {
+      // Process posOrders
+      orderDocs = await Promise.all(
+        posOrders.map(async (order: any) => {
+          const doc = await posOrderModel
+            .findById(order.posOrder)
+            .populate("customer", "name phoneNo address");
+
+          if (!doc) {
+            throw new Error(`POS order not found: ${order.posOrder}`);
+          }
+
+          return { orderDoc: doc, ...order };
+        })
+      );
+      customer = orderDocs[0]?.orderDoc?.customer;
+
+      totalAmount = orderDocs.reduce((sum, { orderDoc }) => {
+        return sum + orderDoc.totalPrice;
+      }, 0);
+    }
+
+    const totalPaid = await orderDocs.reduce(
+      async (sumPromise, { orderDoc }) => {
+        const sum = await sumPromise;
         const previousBillings = await Billing.find({
-          serviceOrder: serviceOrderDoc._id,
+          [`${type}Orders.${type}Order`]: orderDoc._id,
         });
         const totalForOrder = previousBillings.reduce(
           (subtotal, billing) => subtotal + billing.paidAmount,
@@ -97,10 +128,10 @@ export const createBilling = async (req: Request, res: Response) => {
       invoice: newInvoice,
       date: billingDate,
       customer,
-      serviceOrders: serviceOrderDocs.map(({ serviceOrderDoc }) => ({
-        serviceOrder: serviceOrderDoc._id,
-        orderId: serviceOrderDoc.orderId,
-        order: serviceOrderDoc.order,
+      [`${type}Orders`]: orderDocs.map(({ orderDoc }) => ({
+        [`${type}Order`]: orderDoc._id,
+        orderId: orderDoc.orderId,
+        order: orderDoc.order,
       })),
       status: paymentStatus,
       paidAmount: parsedPaidAmount,
@@ -110,29 +141,28 @@ export const createBilling = async (req: Request, res: Response) => {
       discount,
       discountAmount,
       tax,
-      type: "service",
       taxAmount,
       finalTotal,
+      type,
     });
 
     if (!newBilling) {
       return apiError(res, 500, "Failed to create billing");
     }
 
-    // Update payment statuses in ServiceOrder
+    // Update payment statuses in orders
     await Promise.all(
-      serviceOrderDocs.map(async ({ serviceOrderDoc }) => {
-        serviceOrderDoc.paymentStatus = paymentStatus;
-        await serviceOrderDoc.save();
+      orderDocs.map(async ({ orderDoc }) => {
+        orderDoc.paymentStatus = paymentStatus;
+        await orderDoc.save();
       })
     );
 
-    // Populate the new billing for the response
     const populatedBilling = await Billing.findById(newBilling._id)
       .populate("customer", "name phoneNo address")
       .populate({
-        path: "serviceOrders.serviceOrder",
-        populate: { path: "service", select: "title" },
+        path: `${type}Orders.${type}Order`,
+        select: type === "service" ? "serviceCharge" : "totalPrice",
       });
 
     return apiResponse(
