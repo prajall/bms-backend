@@ -241,26 +241,6 @@ export const getBillings = async (req: Request, res: Response) => {
   }
 };
 
-// export const getBillingById = async (req: Request, res: Response) => {
-//   const { billingId } = req.params;
-
-//   try {
-//     const billing = await Billing.findById(billingId)
-//       .populate("customer serviceOrder")
-
-//       .exec();
-
-//     if (!billing) {
-//       return apiError(res, 404, "Billing record not found");
-//     }
-
-//     return apiResponse(res, 200, "Billing fetched successfully", billing);
-//   } catch (error: any) {
-//     console.error("Error fetching billing:", error);
-//     return apiError(res, 500, "Error fetching billing", error.message);
-//   }
-// };
-
 export const getBillingById = async (req: Request, res: Response) => {
   const { billingId } = req.params;
 
@@ -448,3 +428,23 @@ export const deleteBilling = async (req: Request, res: Response) => {
     return apiError(res, 500, "Error deleting billing", error.message);
   }
 };
+
+// export const getBillingById = async (req: Request, res: Response) => {
+//   const { billingId } = req.params;
+
+//   try {
+//     const billing = await Billing.findById(billingId)
+//       .populate("customer serviceOrder")
+
+//       .exec();
+
+//     if (!billing) {
+//       return apiError(res, 404, "Billing record not found");
+//     }
+
+//     return apiResponse(res, 200, "Billing fetched successfully", billing);
+//   } catch (error: any) {
+//     console.error("Error fetching billing:", error);
+//     return apiError(res, 500, "Error fetching billing", error.message);
+//   }
+// };
