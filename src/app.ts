@@ -95,7 +95,7 @@ apiRoutes.use(
   serviceBillingRoutes
 );
 apiRoutes.use("/pos", upload.none(), authValidation, posRoutes);
-apiRoutes.use("/config", upload.none(), authValidation, configRoutes);
+apiRoutes.use("/config", upload.none(), configRoutes);
 apiRoutes.use("/order", upload.none(), authValidation, orderRoutes);
 apiRoutes.use("/report", upload.none(), authValidation, reportRoutes);
 apiRoutes.use(
