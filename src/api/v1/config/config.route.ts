@@ -27,7 +27,7 @@ const checkType = (req: Request, res: Response, next: NextFunction) => {
 };
 
 router.get("/", checkType, getConfig);
-router.get("/all", checkPermission("config", "view"), checkType, getAllConfig);
+router.get("/all", checkType, getAllConfig);
 router.put(
   "/",
   checkPermission("config", "update"),
