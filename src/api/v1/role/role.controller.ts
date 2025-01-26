@@ -138,7 +138,7 @@ export const updateRole = async (req: Request, res: Response) => {
       return apiError(res, 404, "Role not found");
     }
 
-    if (role.name === "admin" && user.role != "master") {
+    if (role.name === "admin" && user.type != "super_admin") {
       return apiError(res, 403, "Only Master can modify Admin");
     }
 

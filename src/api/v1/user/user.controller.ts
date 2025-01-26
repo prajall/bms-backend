@@ -64,8 +64,10 @@ export const loginUser = async (req: Request, res: Response) => {
       "business",
       "employeeLogin"
     )?.enabled;
-    const user = await User.findOne({ email });
-    console.log(user);
+    const user = await User.findOne({ email }).populate({
+      path: "role",
+      strictPopulate: false,
+    });
 
     if (!user) {
       return apiError(res, 404, "User not found");
