@@ -177,8 +177,10 @@ export const getUserInfo = async (req: Request, res: Response) => {
         additionalDetails.name = employeeDetails.name;
         additionalDetails.role = user.role;
       }
-    } else {
+    } else if (user.type === "super_admin") {
       additionalDetails.name = "Super Admin";
+    } else {
+      additionalDetails.name = "Unknown";
     }
 
     // const filteredUser = user.toObject() as any;

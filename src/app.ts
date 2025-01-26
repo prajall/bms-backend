@@ -32,6 +32,7 @@ import mongoose from "mongoose";
 import { upload } from "./utils/multer.util";
 import { authValidation } from "./middlewares/auth.middleware";
 import bodyParser from "body-parser";
+import { checkMaintenanceMode } from "./middlewares/other.middleware";
 
 const app = express();
 app.use(express.static("public"));
@@ -75,7 +76,7 @@ const apiRoutes = express.Router();
 app.use("/api/v1", apiRoutes);
 
 // normal routes
-apiRoutes.use("/user", upload.none(), userRoutes);
+apiRoutes.use("/user", checkMaintenanceMode, upload.none(), userRoutes);
 apiRoutes.use(
   "/installation",
   upload.none(),
@@ -88,37 +89,63 @@ apiRoutes.use(
   authValidation,
   roleRoutes
 );
-apiRoutes.use("/service", upload.none(), serviceRoutes);
+apiRoutes.use("/service", checkMaintenanceMode, upload.none(), serviceRoutes);
 apiRoutes.use(
   "/service-order",
+  checkMaintenanceMode,
   authValidation,
   upload.none(),
   serviceOrderRoutes
 );
 apiRoutes.use(
   "/service-billing",
+  checkMaintenanceMode,
   upload.none(),
   authValidation,
   serviceBillingRoutes
 );
-apiRoutes.use("/pos", upload.none(), authValidation, posRoutes);
+apiRoutes.use(
+  "/pos",
+  checkMaintenanceMode,
+  upload.none(),
+  authValidation,
+  posRoutes
+);
 apiRoutes.use("/config", upload.none(), configRoutes);
-apiRoutes.use("/order", upload.none(), authValidation, orderRoutes);
-apiRoutes.use("/report", upload.none(), authValidation, reportRoutes);
+apiRoutes.use(
+  "/order",
+  checkMaintenanceMode,
+  upload.none(),
+  authValidation,
+  orderRoutes
+);
+apiRoutes.use(
+  "/report",
+  checkMaintenanceMode,
+  upload.none(),
+  authValidation,
+  reportRoutes
+);
 apiRoutes.use(
   "/product-installation",
   authValidation,
   upload.none(),
   productInstallationRoutes
 );
-apiRoutes.use("/dashboard", upload.none(), authValidation, dashboardRoutes);
+apiRoutes.use(
+  "/dashboard",
+  checkMaintenanceMode,
+  upload.none(),
+  authValidation,
+  dashboardRoutes
+);
 
 // image upload routes
-apiRoutes.use("/category", categoryRoutes);
-apiRoutes.use("/product", productRoutes);
-apiRoutes.use("/part", partRoutes);
-apiRoutes.use("/employee", employeeRoutes);
-apiRoutes.use("/customer", customerRoutes);
+apiRoutes.use("/category", checkMaintenanceMode, categoryRoutes);
+apiRoutes.use("/product", checkMaintenanceMode, productRoutes);
+apiRoutes.use("/part", checkMaintenanceMode, partRoutes);
+apiRoutes.use("/employee", checkMaintenanceMode, employeeRoutes);
+apiRoutes.use("/customer", checkMaintenanceMode, customerRoutes);
 
 apiRoutes.get("/test", async (req: Request, res: Response) => {
   console.log("Testing !");

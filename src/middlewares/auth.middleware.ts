@@ -28,7 +28,7 @@ export const authValidation = async (
 
     const user = await User.findById(decoded.id)
       .select("-password")
-      .populate("role");
+      .populate({ path: "role", strictPopulate: false });
 
     if (!user) {
       return apiError(res, 404, "User not found");

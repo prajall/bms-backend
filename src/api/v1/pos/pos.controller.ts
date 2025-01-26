@@ -8,7 +8,6 @@ import { createOrder } from "../order/order.controller";
 import { createBilling } from "../billing/billing.controller";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
-// Create a new POS record
 export const createPOS = async (req: Request, res: Response) => {
   try {
     const {
@@ -21,6 +20,7 @@ export const createPOS = async (req: Request, res: Response) => {
       tax,
       subTotal,
       discount,
+      paidAmount,
     } = req.body;
 
     const { orderId, order } = await createOrder(
@@ -57,7 +57,7 @@ export const createPOS = async (req: Request, res: Response) => {
               date: serviceOrder.date,
               nextServiceDate,
               serviceCharge: serviceOrder.price,
-              orderId: orderId, // Link serviceOrder orders to the newly created Order
+              orderId: orderId,
               order: order,
             };
           } catch (error) {
@@ -85,6 +85,7 @@ export const createPOS = async (req: Request, res: Response) => {
       date: new Date(),
       orderId,
       order: order._id,
+      paidAmount,
     });
 
     if (!pos) {
@@ -100,7 +101,7 @@ export const createPOS = async (req: Request, res: Response) => {
             order: pos.order,
           },
         ],
-        paidAmount: pos.totalPrice,
+        paidAmount,
         date: new Date(),
         customer,
         discount,
@@ -111,12 +112,6 @@ export const createPOS = async (req: Request, res: Response) => {
 
     await createBilling(mockRequest, res);
     return;
-
-    return apiResponse(res, 201, "POS record created successfully", {
-      pos,
-      orderId: order.orderId,
-      createdServiceOrders,
-    });
   } catch (error: any) {
     console.error("Create POS error:", error.message);
     return apiError(res, 500, "Error creating POS record", error.message);
