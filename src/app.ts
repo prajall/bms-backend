@@ -25,7 +25,9 @@ import "./api/v1/user/user.model";
 import "./api/v1/role/role.model";
 import "./api/v1/customer/customer.model";
 import "./api/v1/employee/employee.model";
-import parseNestedFields from "./middlewares/parseFormData";
+import parseNestedFields, {
+  parseJSONFields,
+} from "./middlewares/parseFormData";
 import mongoose from "mongoose";
 import { upload } from "./utils/multer.util";
 import { authValidation } from "./middlewares/auth.middleware";
@@ -80,7 +82,12 @@ apiRoutes.use(
   authValidation,
   installationRoutes
 );
-apiRoutes.use("/role", upload.none(), authValidation, roleRoutes);
+apiRoutes.use(
+  "/role",
+  // upload.none(),
+  authValidation,
+  roleRoutes
+);
 apiRoutes.use("/service", upload.none(), serviceRoutes);
 apiRoutes.use(
   "/service-order",

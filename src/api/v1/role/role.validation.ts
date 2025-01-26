@@ -13,7 +13,7 @@ export const createRoleValidation = [
 
 export const updateRoleValidation = [
   body("name").notEmpty().withMessage("Name is required"),
-  body("permissions").isArray().withMessage("Permissions should be an array"),
+  // body("permissions").isArray().withMessage("Permissions should be an array"),
   body("permissions.*.module")
     .notEmpty()
     .withMessage("Each permission must have a module"),

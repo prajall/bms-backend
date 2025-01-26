@@ -7,6 +7,7 @@ export const checkPermission = (module: string, action: string) => {
     try {
       const userRole = req.user?.role?._id.toString();
       const userType = req.user?.type?.toString();
+      console.log(userRole, userType);
 
       if (userType === "super_admin") {
         return next();

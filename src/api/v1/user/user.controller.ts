@@ -153,51 +153,41 @@ export const loginUser = async (req: Request, res: Response) => {
 
 export const getUserInfo = async (req: Request, res: Response) => {
   const user = req.user;
+  console.log("Auth user:", user);
   try {
     if (!user) {
       return apiError(res, 404, "User not found");
     }
-
-    const userQuery = User.findById(user._id);
-
-    if (user.type === "employee") {
-      userQuery.populate("role");
-    }
-
-    const userDoc = await userQuery;
-
-    if (!userDoc) {
-      return apiError(res, 404, "User not found");
-    }
-
     let additionalDetails: any = {};
-    if (userDoc.type === "customer") {
+
+    if (user.type === "customer") {
       const customerDetails = await Customer.findOne({
-        user: userDoc._id,
+        user: user._id,
       }).lean();
       if (customerDetails) {
         additionalDetails.name = customerDetails.name;
       }
-    } else if (userDoc.type === "employee") {
+    } else if (user.type === "employee") {
       const employeeDetails = await Employee.findOne({
-        user: userDoc._id,
+        user: user._id,
       }).lean();
       if (employeeDetails) {
         additionalDetails.name = employeeDetails.name;
-        additionalDetails.role = userDoc.role;
+        additionalDetails.role = user.role;
       }
     } else {
       additionalDetails.name = "Super Admin";
     }
 
     // const filteredUser = user.toObject() as any;
-    const filteredUser = {
-      ...userDoc,
-      ...additionalDetails,
-    };
-    delete filteredUser.createdAt;
-    delete filteredUser.updatedAt;
-    delete filteredUser.__v;
+    const filteredUser = { ...user.toObject(), ...additionalDetails };
+    // filteredUser.name = additionalDetails.name;
+
+    console.log("Filtered user", filteredUser);
+    // delete filteredUser.createdAt;
+    // delete filteredUser.updatedAt;
+    // delete filteredUser.__v;
+    // delete filteredUser.password;
 
     return apiResponse(
       res,

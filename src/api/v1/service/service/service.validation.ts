@@ -22,7 +22,7 @@ export const validateService = [
     .withMessage("isRecurring must be a boolean"),
   body("interval")
     .optional()
-    .isInt({ min: 1 })
+    .isInt({ min: 0 })
     .withMessage("Interval must be a positive integer")
     .custom((value, { req }) => {
       if (req.body.isRecurring && !value) {

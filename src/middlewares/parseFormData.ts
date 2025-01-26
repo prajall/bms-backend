@@ -60,3 +60,18 @@ const parseNestedFields = (
 };
 
 export default parseNestedFields;
+
+export const parseJSONFields = (fields: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    fields.forEach((field) => {
+      if (req.body[field] && typeof req.body[field] === "string") {
+        try {
+          req.body[field] = JSON.parse(req.body[field]);
+        } catch (error: any) {
+          console.error(`Failed to parse field '${field}':`, error.message);
+        }
+      }
+    });
+    next();
+  };
+};

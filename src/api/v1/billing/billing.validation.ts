@@ -74,9 +74,6 @@ export const validateBilling = [
     .isIn(["service", "pos", "customer"])
     .withMessage("Type must be one of 'service', 'pos', or 'customer'"),
 
-  // Status validation
-  body("status").optional().isString().withMessage("Status must be a string"),
-
   // Paid amount validation
   body("paidAmount")
     .isFloat({ min: 0 })
@@ -103,37 +100,9 @@ export const validateBilling = [
     .isFloat({ min: 0 })
     .withMessage("Discount must be a positive number"),
 
-  // Discount amount validation
-  body("discountAmount")
-    .isFloat({ min: 0 })
-    .withMessage("Discount amount must be a positive number")
-    .notEmpty()
-    .withMessage("Discount amount is required"),
-
-  // Taxable amount validation
-  body("taxableAmount")
-    .isFloat({ min: 0 })
-    .withMessage("Taxable amount must be a positive number")
-    .notEmpty()
-    .withMessage("Taxable amount is required"),
-
   // Tax validation
   body("tax")
     .optional()
     .isFloat({ min: 0 })
     .withMessage("Tax must be a positive number"),
-
-  // Tax amount validation
-  body("taxAmount")
-    .isFloat({ min: 0 })
-    .withMessage("Tax amount must be a positive number")
-    .notEmpty()
-    .withMessage("Tax amount is required"),
-
-  // Final total validation
-  body("finalTotal")
-    .isFloat({ min: 0 })
-    .withMessage("Final total must be a positive number")
-    .notEmpty()
-    .withMessage("Final total is required"),
 ];

@@ -59,6 +59,11 @@ const posSchema = new mongoose.Schema(
         },
       },
     ],
+    paidAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
     totalPrice: {
       type: Number,
       required: true,

@@ -178,7 +178,7 @@ export const createBilling = async (req: Request, res: Response) => {
 };
 
 export const getBillings = async (req: Request, res: Response) => {
-  const { customerId, serviceOrders, date } = req.body;
+  const { customerId, serviceOrders, date, status } = req.body;
 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
@@ -186,7 +186,9 @@ export const getBillings = async (req: Request, res: Response) => {
 
   try {
     let filter: any = {};
-
+    if (status) {
+      filter.status = status;
+    }
     if (customerId) {
       filter.customer = customerId;
     }

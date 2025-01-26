@@ -110,8 +110,6 @@ export const deleteRole = async (req: Request, res: Response) => {
     }
 
     const response = await Role.findByIdAndDelete(roleId);
-    // const updatedRoles = roles.filter((role) => role.name !== roleName);
-    // const success = updateConfig("roles", updatedRoles);
 
     if (!response) {
       return apiError(res, 400, "Role not Found");
@@ -129,9 +127,9 @@ export const updateRole = async (req: Request, res: Response) => {
   const { name, permissions } = req.body;
   const user = req.user;
 
-  if (!Array.isArray(permissions)) {
-    return apiError(res, 400, "Permissions should be an array");
-  }
+  // if (!Array.isArray(permissions)) {
+  //   return apiError(res, 400, "Permissions should be an array");
+  // }
 
   try {
     let role = await Role.findById(roleId);
@@ -150,12 +148,14 @@ export const updateRole = async (req: Request, res: Response) => {
       return apiError(res, 409, `${name} role already exists`);
     }
 
-    const processedPermissions = permissions.map((permission: any) => ({
-      module: permission.module?.toLowerCase(),
-      actions: permission.actions?.map((action: string) =>
-        action.toLowerCase()
-      ),
-    }));
+    const processedPermissions = JSON.parse(permissions).map(
+      (permission: any) => ({
+        module: permission.module?.toLowerCase(),
+        actions: permission.actions?.map((action: string) =>
+          action.toLowerCase()
+        ),
+      })
+    );
 
     const updatedRole = await Role.findByIdAndUpdate(roleId, {
       name: name.toLowerCase(),
