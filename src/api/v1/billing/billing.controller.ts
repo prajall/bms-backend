@@ -14,6 +14,7 @@ export const createBilling = async (req: Request, res: Response) => {
     discount = 0,
     tax = 0,
     type = "service",
+    customer,
   } = req.body;
 
   const parsedPaidAmount = parseInt(paidAmount.toString()) || 0;
@@ -43,7 +44,6 @@ export const createBilling = async (req: Request, res: Response) => {
       .toString()
       .padStart(5, "0")}`;
 
-    let customer;
     let totalAmount = 0;
     let orderDocs = [];
 
@@ -63,7 +63,7 @@ export const createBilling = async (req: Request, res: Response) => {
           return { orderDoc: doc, ...order };
         })
       );
-      customer = orderDocs[0]?.orderDoc?.customer;
+      // customer = orderDocs[0]?.orderDoc?.customer;
 
       totalAmount = orderDocs.reduce((sum, { orderDoc }) => {
         const amount =
@@ -86,7 +86,7 @@ export const createBilling = async (req: Request, res: Response) => {
           return { orderDoc: doc, ...order };
         })
       );
-      customer = orderDocs[0]?.orderDoc?.customer;
+      // customer = orderDocs[0]?.orderDoc?.customer;
 
       totalAmount = orderDocs.reduce((sum, { orderDoc }) => {
         return sum + orderDoc.totalPrice;
