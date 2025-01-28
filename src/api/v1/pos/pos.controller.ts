@@ -188,29 +188,37 @@ export const getPOSById = async (req: Request, res: Response) => {
     const pos = await POS.findById(id)
       .populate("products.product", "name price")
       .populate("parts.part", "name price")
-      .populate("services.service", "name price")
-      // .populate("installations.installationId", "name price")
       .populate("customer", "name email");
 
     if (!pos) {
       return apiError(res, 404, "POS record not found");
     }
 
+    const productsTotal = pos.products.reduce((sum, item : any) => {
+      return sum + (item?.price || 0) * (item.quantity || 0);
+    }, 0);
+
+    const partsTotal = pos.parts.reduce((sum, item : any) => {
+      return sum + (item?.price || 0) * (item.quantity || 0);
+    }, 0);
+
+    const subTotal = productsTotal + partsTotal;
+
+    const taxRate = pos.tax || 0; 
+    const taxAmount = (subTotal * taxRate) / 100;
+    const totalPrice = subTotal + taxAmount;
+
+    // Add calculated fields to the POS data
+    pos.subTotal = subTotal;
+    pos.totalPrice = totalPrice;
+
     const pastBillings = await Billing.find({
       type: "pos",
-      "posOrders.order": id,
+      "posOrders.posOrder": id,
     })
       .populate("customer", "name email")
       .populate("posOrders.order", "orderId")
       .sort({ date: 1 });
-
-    if (pastBillings.length === 0) {
-      return apiError(
-        res,
-        404,
-        "No billing records found for the given POS ID"
-      );
-    }
 
     const totalPaid = pastBillings.reduce(
       (sum, billing) => sum + billing.paidAmount,
@@ -220,18 +228,20 @@ export const getPOSById = async (req: Request, res: Response) => {
       (sum, billing) => sum + billing.totalAmount,
       0
     );
-    const remainingAmount = totalAmount - totalPaid;
+    const remainingAmount = totalAmount > 0 
+      ? totalAmount - totalPaid 
+      : subTotal - totalPaid;
 
     // Prepare the response object
     const response = {
       pos,
       pastBillings,
       totalPaid,
-      totalAmount,
+      totalAmount : subTotal,
       remainingAmount,
     };
 
-    return apiResponse(res, 200, "POS record retrieved successfully", pos);
+    return apiResponse(res, 200, "POS record retrieved successfully", response);
   } catch (error: any) {
     console.error("Get POS by ID error:", error);
     return apiError(res, 500, "Error fetching POS record", error.message);

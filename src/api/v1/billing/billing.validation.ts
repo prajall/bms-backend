@@ -25,25 +25,7 @@ export const validateBilling = [
 
   // Service orders validation
   body("serviceOrders")
-    .optional()
-    .isArray()
-    .withMessage("Service orders must be a array")
-    .custom((serviceOrders) => {
-      if (
-        !serviceOrders.every(
-          (order: any) =>
-            order.serviceOrder &&
-            mongoose.Types.ObjectId.isValid(order.serviceOrder) &&
-            order.orderId &&
-            typeof order.orderId === "string"
-        )
-      ) {
-        throw new Error(
-          "Each service order must have a valid serviceOrder ID and orderId"
-        );
-      }
-      return true;
-    }),
+    .optional(),
 
   // POS orders validation
   body("posOrders")

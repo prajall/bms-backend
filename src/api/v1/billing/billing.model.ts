@@ -38,7 +38,7 @@ const billingSchema = new mongoose.Schema(
       {
         posOrder: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "ServiceOrder",
+          ref: "POS",
           required: true,
         },
         orderId: {
