@@ -61,17 +61,19 @@ const parseNestedFields = (
 
 export default parseNestedFields;
 
-export const parseJSONFields = (fields: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    fields.forEach((field) => {
-      if (req.body[field] && typeof req.body[field] === "string") {
-        try {
-          req.body[field] = JSON.parse(req.body[field]);
-        } catch (error: any) {
-          console.error(`Failed to parse field '${field}':`, error.message);
-        }
-      }
-    });
-    next();
-  };
+export const parseFormData = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  // Parse fields that are JSON strings
+  for (const key in req.body) {
+    try {
+      req.body[key] = JSON.parse(req.body[key]);
+    } catch (error) {
+      // Leave non-JSON strings untouched
+      console.log("Error in parseFormData middleware:", error);
+    }
+  }
+  next();
 };

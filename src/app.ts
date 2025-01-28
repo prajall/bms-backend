@@ -25,9 +25,7 @@ import "./api/v1/user/user.model";
 import "./api/v1/role/role.model";
 import "./api/v1/customer/customer.model";
 import "./api/v1/employee/employee.model";
-import parseNestedFields, {
-  parseJSONFields,
-} from "./middlewares/parseFormData";
+import parseNestedFields, { parseFormData } from "./middlewares/parseFormData";
 import mongoose from "mongoose";
 import { upload } from "./utils/multer.util";
 import { authValidation } from "./middlewares/auth.middleware";
@@ -40,8 +38,8 @@ app.use(express.static("public"));
 export default app;
 
 //middlewares
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 //To handle form data
@@ -76,31 +74,47 @@ const apiRoutes = express.Router();
 app.use("/api/v1", apiRoutes);
 
 // normal routes
-apiRoutes.use("/user", checkMaintenanceMode, upload.none(), userRoutes);
+apiRoutes.use(
+  "/user",
+  checkMaintenanceMode,
+  upload.none(),
+  parseFormData,
+  userRoutes
+);
 apiRoutes.use(
   "/installation",
   upload.none(),
+  parseFormData,
   authValidation,
   installationRoutes
 );
 apiRoutes.use(
   "/role",
-  // upload.none(),
+  upload.none(),
+  parseFormData,
   authValidation,
   roleRoutes
 );
-apiRoutes.use("/service", checkMaintenanceMode, upload.none(), serviceRoutes);
+apiRoutes.use(
+  "/service",
+  checkMaintenanceMode,
+  upload.none(),
+  parseFormData,
+  serviceRoutes
+);
 apiRoutes.use(
   "/service-order",
   checkMaintenanceMode,
   authValidation,
   upload.none(),
+  parseFormData,
   serviceOrderRoutes
 );
 apiRoutes.use(
   "/service-billing",
   checkMaintenanceMode,
   upload.none(),
+  parseFormData,
   authValidation,
   serviceBillingRoutes
 );
@@ -108,14 +122,16 @@ apiRoutes.use(
   "/pos",
   checkMaintenanceMode,
   upload.none(),
+  parseFormData,
   authValidation,
   posRoutes
 );
-apiRoutes.use("/config", upload.none(), configRoutes);
+apiRoutes.use("/config", upload.none(), parseFormData, configRoutes);
 apiRoutes.use(
   "/order",
   checkMaintenanceMode,
   upload.none(),
+  parseFormData,
   authValidation,
   orderRoutes
 );
@@ -123,6 +139,7 @@ apiRoutes.use(
   "/report",
   checkMaintenanceMode,
   upload.none(),
+  parseFormData,
   authValidation,
   reportRoutes
 );
@@ -130,12 +147,14 @@ apiRoutes.use(
   "/product-installation",
   authValidation,
   upload.none(),
+  parseFormData,
   productInstallationRoutes
 );
 apiRoutes.use(
   "/dashboard",
   checkMaintenanceMode,
   upload.none(),
+  parseFormData,
   authValidation,
   dashboardRoutes
 );

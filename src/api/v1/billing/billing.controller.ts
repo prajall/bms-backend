@@ -47,7 +47,7 @@ export const createBilling = async (req: Request, res: Response) => {
     let totalAmount = 0;
     let orderDocs = [];
 
-    if (type === "service") {
+    if (type === "service" && serviceOrders.length > 0) {
       // Process serviceOrders
       orderDocs = await Promise.all(
         serviceOrders.map(async (order: any) => {

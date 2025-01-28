@@ -92,26 +92,33 @@ export const createPOS = async (req: Request, res: Response) => {
       return apiError(res, 400, "Failed to create POS record");
     }
 
-    const mockRequest = {
-      body: {
-        posOrders: [
-          {
-            posOrder: pos._id,
-            orderId: pos.orderId,
-            order: pos.order,
-          },
-        ],
-        paidAmount,
-        date: new Date(),
-        customer,
-        discount,
-        totalAmount: totalPrice,
-        type: "pos",
-      },
-    } as Request;
+    if (paidAmount > 0) {
+      const mockRequest = {
+        body: {
+          posOrders: [
+            {
+              posOrder: pos._id,
+              orderId: pos.orderId,
+              order: pos.order,
+            },
+          ],
+          paidAmount,
+          date: new Date(),
+          customer,
+          discount,
+          totalAmount: totalPrice,
+          type: "pos",
+        },
+      } as Request;
 
-    await createBilling(mockRequest, res);
-    return;
+      await createBilling(mockRequest, res);
+      return;
+    }
+    return apiResponse(res, 201, "POS record created successfully", {
+      pos,
+      orderId: order.orderId,
+      createdServiceOrders,
+    });
   } catch (error: any) {
     console.error("Create POS error:", error.message);
     return apiError(res, 500, "Error creating POS record", error.message);
@@ -194,17 +201,17 @@ export const getPOSById = async (req: Request, res: Response) => {
       return apiError(res, 404, "POS record not found");
     }
 
-    const productsTotal = pos.products.reduce((sum, item : any) => {
+    const productsTotal = pos.products.reduce((sum, item: any) => {
       return sum + (item?.price || 0) * (item.quantity || 0);
     }, 0);
 
-    const partsTotal = pos.parts.reduce((sum, item : any) => {
+    const partsTotal = pos.parts.reduce((sum, item: any) => {
       return sum + (item?.price || 0) * (item.quantity || 0);
     }, 0);
 
     const subTotal = productsTotal + partsTotal;
 
-    const taxRate = pos.tax || 0; 
+    const taxRate = pos.tax || 0;
     const taxAmount = (subTotal * taxRate) / 100;
     const totalPrice = subTotal + taxAmount;
 
@@ -228,16 +235,15 @@ export const getPOSById = async (req: Request, res: Response) => {
       (sum, billing) => sum + billing.totalAmount,
       0
     );
-    const remainingAmount = totalAmount > 0 
-      ? totalAmount - totalPaid 
-      : subTotal - totalPaid;
+    const remainingAmount =
+      totalAmount > 0 ? totalAmount - totalPaid : subTotal - totalPaid;
 
     // Prepare the response object
     const response = {
       pos,
       pastBillings,
       totalPaid,
-      totalAmount : subTotal,
+      totalAmount: subTotal,
       remainingAmount,
     };
 

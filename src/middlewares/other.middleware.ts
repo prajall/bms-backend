@@ -8,7 +8,6 @@ export const checkMaintenanceMode = (
   next: NextFunction
 ): void => {
   const maintenanceMode = getConfigValue("system", "maintenanceMode");
-  console.log("Maintenance Mode: ", maintenanceMode);
 
   if (maintenanceMode && maintenanceMode.enable) {
     return apiError(

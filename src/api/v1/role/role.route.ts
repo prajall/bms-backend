@@ -19,7 +19,6 @@ router.get("/", checkPermission("role", "view"), getAllRoles);
 router.post(
   "/",
   checkPermission("role", "create"),
-  upload.none(),
   createRoleValidation,
   handleValidation,
   createRole
@@ -28,7 +27,6 @@ router.get("/:roleId", checkPermission("role", "view"), getRoleById);
 router.delete("/:roleId", checkPermission("role", "delete"), deleteRole);
 router.patch(
   "/:roleId",
-  upload.none(),
   checkPermission("role", "update"),
   updateRoleValidation,
   handleValidation,

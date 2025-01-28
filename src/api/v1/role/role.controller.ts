@@ -38,14 +38,12 @@ export const createRole = async (req: Request, res: Response) => {
       return apiError(res, 409, `${name} role already exists`);
     }
 
-    const processedPermissions = JSON.parse(permissions).map(
-      (permission: any) => ({
-        module: permission.module?.toLowerCase(),
-        actions: permission.actions?.map((action: string) =>
-          action.toLowerCase()
-        ),
-      })
-    );
+    const processedPermissions = permissions.map((permission: any) => ({
+      module: permission.module?.toLowerCase(),
+      actions: permission.actions?.map((action: string) =>
+        action.toLowerCase()
+      ),
+    }));
 
     const newRole = await Role.create({
       name: roleName,
@@ -148,14 +146,12 @@ export const updateRole = async (req: Request, res: Response) => {
       return apiError(res, 409, `${name} role already exists`);
     }
 
-    const processedPermissions = JSON.parse(permissions).map(
-      (permission: any) => ({
-        module: permission.module?.toLowerCase(),
-        actions: permission.actions?.map((action: string) =>
-          action.toLowerCase()
-        ),
-      })
-    );
+    const processedPermissions = permissions.map((permission: any) => ({
+      module: permission.module?.toLowerCase(),
+      actions: permission.actions?.map((action: string) =>
+        action.toLowerCase()
+      ),
+    }));
 
     const updatedRole = await Role.findByIdAndUpdate(roleId, {
       name: name.toLowerCase(),

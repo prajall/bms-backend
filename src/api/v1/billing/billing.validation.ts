@@ -24,8 +24,7 @@ export const validateBilling = [
     .withMessage("Invalid customer ID"),
 
   // Service orders validation
-  body("serviceOrders")
-    .optional(),
+  body("serviceOrders").optional(),
 
   // POS orders validation
   body("posOrders")
@@ -50,11 +49,11 @@ export const validateBilling = [
     }),
 
   // Type validation
-  body("type")
-    .notEmpty()
-    .withMessage("Type is required")
-    .isIn(["service", "pos", "customer"])
-    .withMessage("Type must be one of 'service', 'pos', or 'customer'"),
+  // body("type")
+  //   .notEmpty()
+  //   .withMessage("Type is required")
+  //   .isIn(["service", "pos", "customer"])
+  //   .withMessage("Type must be one of 'service', 'pos', or 'customer'"),
 
   // Paid amount validation
   body("paidAmount")
