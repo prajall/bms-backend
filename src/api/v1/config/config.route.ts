@@ -6,6 +6,7 @@ import {
 } from "./config.controller";
 import { apiResponse } from "../../../utils/response.util";
 import { checkPermission } from "../../../middlewares/permissions.middleware";
+import { authValidation } from "../../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.get("/", checkType, getConfig);
 router.get("/all", checkType, getAllConfig);
 router.put(
   "/",
+  authValidation,
   checkPermission("config", "update"),
   checkType,
   updateConfigValue
