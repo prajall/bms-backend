@@ -11,23 +11,29 @@ import {
   updateProduct,
 } from "./product.controller";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
-import { employeeVerification } from "../../../../middlewares/auth.middleware";
+import {
+  authValidation,
+  employeeVerification,
+} from "../../../../middlewares/auth.middleware";
 import { upload } from "../../../../utils/multer.util";
+import { checkPermission } from "../../../../middlewares/permissions.middleware";
 
 const router = Router();
 
 router.post(
   "/",
+  authValidation,
+  checkPermission("product", "update"),
   upload.array("images", 5),
-  employeeVerification,
   productValidation,
   handleValidation,
   createProduct
 );
 router.patch(
   "/:id",
+  authValidation,
+  checkPermission("product", "update"),
   upload.array("images", 5),
-  employeeVerification,
   productValidation,
   handleValidation,
   updateProduct

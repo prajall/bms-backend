@@ -104,7 +104,6 @@ const productSchema = new mongoose.Schema(
     minimumOrderQuantity: {
       type: Number,
       default: 1,
-      min: 1,
     },
     dimensions: {
       width: Number,
