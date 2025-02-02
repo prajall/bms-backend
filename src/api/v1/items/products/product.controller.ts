@@ -5,11 +5,7 @@ import mongoose from "mongoose";
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const user = req.user;
-
-    if (!user) {
-      return apiError(res, 401, "Unauthorized");
-    }
+const user = req.user
     const existingProduct = await Product.findOne({
       $or: [
         { serialNo: req.body.serialNo },

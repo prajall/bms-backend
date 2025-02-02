@@ -13,7 +13,7 @@ import {
 import { handleValidation } from "../../../../middlewares/validation.middleware";
 import {
   authValidation,
-  employeeVerification,
+  authValidation, employeeVerification,
 } from "../../../../middlewares/auth.middleware";
 import { upload } from "../../../../utils/multer.util";
 import { checkPermission } from "../../../../middlewares/permissions.middleware";
@@ -24,6 +24,8 @@ router.post(
   "/",
   authValidation,
   checkPermission("product", "update"),
+  authValidation,
+  handleValidation,
   upload.array("images", 5),
   productValidation,
   handleValidation,
@@ -33,6 +35,8 @@ router.patch(
   "/:id",
   authValidation,
   checkPermission("product", "update"),
+  authValidation,
+  handleValidation,
   upload.array("images", 5),
   productValidation,
   handleValidation,

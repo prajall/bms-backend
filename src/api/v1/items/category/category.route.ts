@@ -16,9 +16,9 @@ const router = Router();
 
 router.post(
   "/",
-  // upload.single("image"),
-  upload.none(),
+  // upload.none(),
   authValidation,
+  upload.single("image"),
   checkPermission("category", "create"),
   categoryValidation,
   handleValidation,
@@ -28,8 +28,9 @@ router.get("/", getAllCategories);
 router.get("/:id", upload.none(), getCategoryById);
 router.patch(
   "/:id",
-  upload.none(),
+  // upload.none(),
   authValidation,
+  upload.single('image'),
   checkPermission("category", "update"),
   categoryValidation,
   handleValidation,
