@@ -5,8 +5,7 @@ import mongoose from "mongoose";
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const employee = req.employee;
-
+const user = req.user
     const existingProduct = await Product.findOne({
       $or: [
         { serialNo: req.body.serialNo },
@@ -64,7 +63,7 @@ export const createProduct = async (req: Request, res: Response) => {
       dimensions: req.body.dimensions,
       weight: req.body.weight,
       seo: req.body.seo,
-      createdBy: employee._id,
+      createdBy: user._id,
     });
 
     if (!product) {

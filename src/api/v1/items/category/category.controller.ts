@@ -37,7 +37,7 @@ export const createCategory = async (req: Request, res: Response) => {
       return apiError(res, 500, "Failed to create category");
     }
 
-    return apiResponse(res, 201, "Category created successfully");
+    return apiResponse(res, 201, "Category created successfully",category);
   } catch (error) {
     console.error("Create category error:", error);
     return apiError(res, 500, "Internal server error", error);
