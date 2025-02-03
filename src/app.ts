@@ -159,7 +159,7 @@ apiRoutes.use(
   checkMaintenanceMode,
   upload.none(),
   parseFormData,
-  authValidation,
+  // authValidation,
   dashboardRoutes
 );
 
