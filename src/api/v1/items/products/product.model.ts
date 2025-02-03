@@ -49,7 +49,7 @@ const productSchema = new mongoose.Schema(
       ref: "Category",
       index: true,
     },
-    images: [{ type: String, required: true }],
+    images: [{ type: String }],
     stock: {
       type: Number,
       required: true,

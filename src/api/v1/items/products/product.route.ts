@@ -5,6 +5,7 @@ import {
 } from "./product.validation";
 import {
   createProduct,
+  deleteProduct,
   getAllProducts,
   getProductById,
   getProductsMiniList,
@@ -12,21 +13,22 @@ import {
 } from "./product.controller";
 import { handleValidation } from "../../../../middlewares/validation.middleware";
 import {
-  authValidation,
-  authValidation, employeeVerification,
+  authValidation, 
 } from "../../../../middlewares/auth.middleware";
 import { upload } from "../../../../utils/multer.util";
 import { checkPermission } from "../../../../middlewares/permissions.middleware";
+import parseNestedFields from "../../../../middlewares/parseFormData";
+import { processBaseImage } from "../../../../middlewares/other.middleware";
 
 const router = Router();
 
 router.post(
   "/",
   authValidation,
-  checkPermission("product", "update"),
-  authValidation,
-  handleValidation,
   upload.array("images", 5),
+  checkPermission("product", "update"),
+  parseNestedFields,
+  processBaseImage,
   productValidation,
   handleValidation,
   createProduct
@@ -36,7 +38,6 @@ router.patch(
   authValidation,
   checkPermission("product", "update"),
   authValidation,
-  handleValidation,
   upload.array("images", 5),
   productValidation,
   handleValidation,
@@ -52,5 +53,6 @@ router.get(
 );
 
 router.get("/:id", getProductById);
+router.delete("/:id", authValidation, checkPermission("product","delete"),deleteProduct)
 
 export default router;

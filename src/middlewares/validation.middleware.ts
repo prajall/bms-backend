@@ -9,7 +9,7 @@ export const handleValidation = (
   next: NextFunction
 ) => {
   const errors = validationResult(req);
-  console.log("BODY: ", req.body);
+  // console.log("BODY: ", req.body);
   if (!errors.isEmpty()) {
     return apiError(
       res,

@@ -29,6 +29,7 @@ const parseNestedFields = (
   res: Response,
   next: NextFunction
 ): void => {
+  console.log("Parse nested: ",req.body)
   if (req.body && typeof req.body === "object") {
     req.body = reconstructNestedObject(req.body);
 

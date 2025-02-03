@@ -82,13 +82,13 @@ export const productValidation = [
 
   body("category").isMongoId().withMessage("Invalid category ID"),
 
-  body("images")
-    .isArray()
-    .withMessage("Images must be an array")
-    .notEmpty()
-    .withMessage("At least one image is required"),
+  // body("images")
+  //   .isArray()
+  //   .withMessage("Images must be an array")
+  //   .notEmpty()
+  //   .withMessage("At least one image is required"),
 
-  body("images.*").isString().withMessage("Image must be a string"),
+  // body("images.*").isString().withMessage("Image must be a string"),
 
   // Specifications
   body("keyFeatures")
