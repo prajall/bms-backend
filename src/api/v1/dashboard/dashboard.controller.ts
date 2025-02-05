@@ -9,10 +9,41 @@ import customerModel from "../customer/customer.model";
 import employeeModel from "../employee/employee.model";
 import productModel from "../items/products/product.model";
 import partsModel from "../items/parts/parts.model";
+import { group } from "console";
 export const getDashboardData = async (req: Request, res: Response) => {
-  const LOW_STOCK_THRESHOLD = 5; // Adjust as needed
+  const LOW_STOCK_THRESHOLD = 5;
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, trendType } = req.query;
+
+    if (!trendType) {
+      return apiError(res, 400, "trendType is required");
+    }
+
+    let groupByField;
+    switch (trendType) {
+      case "daily":
+        groupByField = {
+          $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+        };
+        break;
+      case "monthly":
+        groupByField = {
+          $dateToString: { format: "%Y-%m", date: "$createdAt" },
+        };
+        break;
+      case "yearly":
+        groupByField = { $dateToString: { format: "%Y", date: "$createdAt" } };
+        break;
+      case "weekly":
+        groupByField = { $dayOfWeek: "$createdAt" };
+        break;
+      default:
+        return apiError(
+          res,
+          400,
+          "Invalid trendType. Use 'daily', 'monthly', 'yearly' or 'weekly'"
+        );
+    }
 
     const start = startDate ? new Date(startDate as string) : undefined;
     const end = endDate ? new Date(endDate as string) : undefined;
@@ -48,10 +79,8 @@ export const getDashboardData = async (req: Request, res: Response) => {
           revenueTrend: [
             {
               $group: {
-                _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$date" },
-                },
-                dailyRevenue: { $sum: "$total" },
+                _id: groupByField,
+                dailyRevenue: { $sum: "$totalAmount" },
               },
             },
             { $sort: { _id: 1 } },
@@ -83,9 +112,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
           serviceOrdersTrend: [
             {
               $group: {
-                _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$date" },
-                },
+                _id: groupByField,
                 count: { $sum: 1 },
               },
             },
@@ -148,9 +175,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
           posOrdersTrend: [
             {
               $group: {
-                _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-                },
+                _id: groupByField,
                 count: { $sum: 1 },
               },
             },
@@ -182,9 +207,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
           customerTrend: [
             {
               $group: {
-                _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-                },
+                _id: groupByField,
                 count: { $sum: 1 },
               },
             },
@@ -216,9 +239,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
           employeeTrend: [
             {
               $group: {
-                _id: {
-                  $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-                },
+                _id: groupByField,
                 count: { $sum: 1 },
               },
             },
@@ -404,7 +425,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       totalTax = 0,
     } = billingResult[0]?.summary?.[0] || {};
 
-    const revenueTrend = billingResult[0]?.revenueTrend || [];
+    const revenueTrend = billingResult[0]?.revenue || [];
 
     // ------------------ PARSE SERVICE ORDER RESULTS ------------------
     const serviceOrderFacet = serviceOrderResult[0] || {};
