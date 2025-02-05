@@ -2,132 +2,56 @@ import { Request, Response } from "express";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import { PipelineStage } from "mongoose";
 import { fetchOtherData, fetchRevenue } from "./dashboard.function";
-
-export const getKPI = async (req: Request, res: Response) => {
-  try {
-    const { startDate, endDate } = req.query;
-
-    // Match for date range (if provided)
-    const match: any = {};
-    if (startDate) {
-      match.date = { $gte: new Date(startDate as string) };
-    }
-    if (endDate) {
-      match.date = match.date || {};
-      match.date.$lte = new Date(endDate as string);
-    }
-
-    const revenue = await fetchRevenue(match);
-    const {
-      totalCustomers,
-      totalEmployees,
-      totalProducts,
-      totalServiceOrders,
-      serviceOrdersThisMonth,
-      totalParts,
-    } = await fetchOtherData(match);
-
-    if (!revenue.length) {
-      return apiError(res, 404, "No KPI data found");
-    }
-
-    const totalRevenueSummary = revenue[0].totalRevenueSummary[0] || {
-      totalRevenue: 0,
-      totalPaid: 0,
-      totalDue: 0,
-      totalDiscount: 0,
-      totalTax: 0,
-    };
-    const filteredRevenueSummary = revenue[0].filteredRevenueSummary[0] || {
-      totalRevenue: 0,
-      totalPaid: 0,
-      totalDue: 0,
-      totalDiscount: 0,
-      totalTax: 0,
-    };
-
-    const revenueTrends = revenue[0].revenueTrends || [];
-    const paymentStatus = revenue[0].paymentStatus.reduce(
-      (acc: Record<string, number>, { _id, count }: any) => {
-        acc[_id] = count;
-        return acc;
-      },
-      {}
-    );
-
-    return apiResponse(res, 200, "KPI data retrieved successfully", {
-      totalRevenueSummary,
-      filteredRevenueSummary,
-      revenueTrends,
-      paymentStatus,
-      totalCustomers,
-      totalEmployees,
-      totalProducts,
-      totalParts,
-      totalServiceOrders,
-      serviceOrdersThisMonth,
-    });
-  } catch (error: any) {
-    console.error("Error fetching KPI data:", error);
-    return apiError(res, 500, "Error fetching KPI data", error.message);
-  }
-};
-
-// Define threshold for low-stock products/parts
-const LOW_STOCK_THRESHOLD = 5; // Adjust as needed
-
+import billingModel from "../billing/billing.model";
+import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
+import posModel from "../pos/pos.model";
+import customerModel from "../customer/customer.model";
+import employeeModel from "../employee/employee.model";
+import productModel from "../items/products/product.model";
+import partsModel from "../items/parts/parts.model";
 export const getDashboardData = async (req: Request, res: Response) => {
+  const LOW_STOCK_THRESHOLD = 5; // Adjust as needed
   try {
-    // Extract startDate and endDate for filtering
     const { startDate, endDate } = req.query;
 
-    // Convert to Date objects if provided
     const start = startDate ? new Date(startDate as string) : undefined;
     const end = endDate ? new Date(endDate as string) : undefined;
 
-    // Build a date match for pipeline
     const dateMatch: any = {};
     if (start) {
-      dateMatch.$gte = start;
+      dateMatch.createdAt = { $gte: new Date(start) };
     }
     if (end) {
-      dateMatch.$lte = end;
+      dateMatch.createdAt = { $lte: new Date(end) };
     }
-
-    // 1) =============== FINANCIAL DATA FROM BILLING ===============
-    // Query for total revenue, total due, total tax, revenue trend
-    const billingMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      billingMatch.date = dateMatch;
-    }
+    console.log(dateMatch);
 
     const billingPipeline: PipelineStage[] = [
-      { $match: billingMatch },
+      { $match: dateMatch },
       {
         $facet: {
-          // Summaries for the entire period
           summary: [
             {
               $group: {
                 _id: null,
-                totalRevenue: { $sum: "$finalTotal" },
+                totalRevenue: { $sum: "$totalAmount" },
+                totalPaid: { $sum: "$totalPaid" },
                 totalDue: {
                   $sum: {
-                    $subtract: ["$finalTotal", "$paidAmount"],
+                    $subtract: ["$totalAmount", "$paidAmount"],
                   },
                 },
                 totalTax: { $sum: "$taxAmount" },
               },
             },
           ],
-          // Trend by day (or month) for chart
           revenueTrend: [
             {
               $group: {
                 _id: {
                   $dateToString: { format: "%Y-%m-%d", date: "$date" },
                 },
-                dailyRevenue: { $sum: "$finalTotal" },
+                dailyRevenue: { $sum: "$total" },
               },
             },
             { $sort: { _id: 1 } },
@@ -136,15 +60,8 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     ];
 
-    // 2a) =============== SERVICE ORDERS ===============
-    // Filter by date range if needed (using 'date' field in ServiceOrder)
-    const serviceOrderMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      serviceOrderMatch.date = dateMatch;
-    }
-
     const serviceOrderPipeline: PipelineStage[] = [
-      { $match: serviceOrderMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalServiceOrders: [
@@ -169,10 +86,17 @@ export const getDashboardData = async (req: Request, res: Response) => {
                 _id: {
                   $dateToString: { format: "%Y-%m-%d", date: "$date" },
                 },
-                dailyCount: { $sum: 1 },
+                count: { $sum: 1 },
               },
             },
             { $sort: { _id: 1 } },
+            {
+              $project: {
+                _id: 0,
+                date: "$_id",
+                count: 1,
+              },
+            },
           ],
           popularServices: [
             {
@@ -182,22 +106,35 @@ export const getDashboardData = async (req: Request, res: Response) => {
               },
             },
             { $sort: { count: -1 } },
-            { $limit: 5 }, // top 5
+            { $limit: 5 },
+            {
+              $lookup: {
+                from: "services",
+                localField: "_id",
+                foreignField: "_id",
+                as: "service",
+              },
+            },
+            { $unwind: { path: "$service", preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 0,
+                service: {
+                  _id: "$service._id",
+                  title: "$service.title",
+                  serviceType: "$service.serviceType",
+                  serviceCharge: "$service.serviceCharge",
+                },
+                count: 1,
+              },
+            },
           ],
         },
       },
     ];
 
-    // 2b) =============== POS ORDERS ===============
-    // Filter by date range if needed (using 'createdAt' or 'updatedAt' or custom date if you have one)
-    const posMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      // Assume we filter by 'createdAt'
-      posMatch.createdAt = dateMatch;
-    }
-
     const posPipeline: PipelineStage[] = [
-      { $match: posMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalPosOrders: [
@@ -214,24 +151,24 @@ export const getDashboardData = async (req: Request, res: Response) => {
                 _id: {
                   $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
                 },
-                dailyCount: { $sum: 1 },
+                count: { $sum: 1 },
               },
             },
             { $sort: { _id: 1 } },
+            {
+              $project: {
+                _id: 0,
+                date: "$_id",
+                count: 1,
+              },
+            },
           ],
         },
       },
     ];
 
-    // 3) =============== CUSTOMERS ===============
-    // Filter by 'createdAt' if you want to see how many customers were created in range
-    const customerMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      customerMatch.createdAt = dateMatch;
-    }
-
     const customersPipeline: PipelineStage[] = [
-      { $match: customerMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalCustomers: [
@@ -248,23 +185,24 @@ export const getDashboardData = async (req: Request, res: Response) => {
                 _id: {
                   $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
                 },
-                dailyCount: { $sum: 1 },
+                count: { $sum: 1 },
               },
             },
             { $sort: { _id: 1 } },
+            {
+              $project: {
+                _id: 0,
+                date: "$_id",
+                count: 1,
+              },
+            },
           ],
         },
       },
     ];
 
-    // 4) =============== EMPLOYEES ===============
-    const employeeMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      employeeMatch.createdAt = dateMatch;
-    }
-
     const employeePipeline: PipelineStage[] = [
-      { $match: employeeMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalEmployees: [
@@ -281,26 +219,24 @@ export const getDashboardData = async (req: Request, res: Response) => {
                 _id: {
                   $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
                 },
-                dailyCount: { $sum: 1 },
+                count: { $sum: 1 },
               },
             },
             { $sort: { _id: 1 } },
+            {
+              $project: {
+                _id: 0,
+                date: "$_id",
+                count: "$count",
+              },
+            },
           ],
         },
       },
     ];
 
-    // 5) =============== PRODUCTS ===============
-    // Filter by 'createdAt' for date range if needed
-    const productMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      productMatch.createdAt = dateMatch;
-    }
-
-    // For best selling, we likely need to do aggregator from POS or Billings
-    // but let's keep it simple: just a placeholder aggregator for now
     const productsPipeline: PipelineStage[] = [
-      { $match: productMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalProducts: [
@@ -311,6 +247,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
               },
             },
           ],
+
           lowStock: [
             {
               $match: {
@@ -320,7 +257,9 @@ export const getDashboardData = async (req: Request, res: Response) => {
             {
               $group: {
                 _id: null,
-                products: { $push: { _id: "$_id", name: "$name", stock: "$stock" } },
+                products: {
+                  $push: { _id: "$_id", name: "$name", stock: "$stock" },
+                },
               },
             },
           ],
@@ -328,29 +267,51 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     ];
 
-    // Example best selling aggregator (POS-based). If you want date-based, apply the same posMatch if needed:
-    // We'll handle this in a separate query for clarity
     const bestSellingProductsPipeline: PipelineStage[] = [
-      { $match: posMatch },
+      { $match: dateMatch },
+
       { $unwind: "$products" },
+
       {
         $group: {
           _id: "$products.product",
           totalSold: { $sum: "$products.quantity" },
         },
       },
+
       { $sort: { totalSold: -1 } },
+
       { $limit: 5 },
+
+      {
+        $addFields: {
+          productId: { $toObjectId: "$_id" }, // Convert `_id` to ObjectId
+        },
+      },
+
+      {
+        $lookup: {
+          from: "products",
+          localField: "productId",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+
+      { $unwind: { path: "$product", preserveNullAndEmptyArrays: true } }, // Unwind to extract product details
+
+      {
+        $project: {
+          _id: "$productId",
+          totalSold: 1,
+          productName: { $ifNull: ["$product.name", "Unknown Product"] }, // Handle missing names
+          productPrice: { $ifNull: ["$product.sellingPrice", 0] }, // Handle missing prices
+        },
+      },
     ];
 
-    // 6) =============== PARTS ===============
-    const partMatch: any = {};
-    if (Object.keys(dateMatch).length) {
-      partMatch.createdAt = dateMatch;
-    }
-
     const partsPipeline: PipelineStage[] = [
-      { $match: partMatch },
+      { $match: dateMatch },
       {
         $facet: {
           totalParts: [
@@ -370,7 +331,9 @@ export const getDashboardData = async (req: Request, res: Response) => {
             {
               $group: {
                 _id: null,
-                parts: { $push: { _id: "$_id", name: "$name", stock: "$stock" } },
+                parts: {
+                  $push: { _id: "$_id", name: "$name", stock: "$stock" },
+                },
               },
             },
           ],
@@ -378,21 +341,38 @@ export const getDashboardData = async (req: Request, res: Response) => {
       },
     ];
 
-    // Similarly for best selling parts we might check POS usage
     const bestSellingPartsPipeline: PipelineStage[] = [
-      { $match: posMatch },
+      { $match: dateMatch },
       { $unwind: "$parts" },
       {
         $group: {
           _id: "$parts.part",
-          totalUsed: { $sum: "$parts.quantity" },
+          totalSold: { $sum: "$parts.quantity" },
         },
       },
-      { $sort: { totalUsed: -1 } },
-      { $limit: 5 },
+      { $sort: { totalSold: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "parts",
+          localField: "_id",
+          foreignField: "_id",
+          as: "part",
+        },
+      },
+
+      { $unwind: { path: "$part", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          _id: "$_id",
+          totalSold: 1,
+          partName: { $ifNull: ["$part.name", "Unknown part"] },
+          partPrice: { $ifNull: ["$part.sellingPrice", 0] },
+        },
+      },
     ];
 
-    // ------------------ PROMISE.ALL FOR PARALLEL QUERIES ------------------
     const [
       billingResult,
       serviceOrderResult,
@@ -404,20 +384,22 @@ export const getDashboardData = async (req: Request, res: Response) => {
       partsResult,
       bestSellingPartsResult,
     ] = await Promise.all([
-      Billing.aggregate(billingPipeline),
-      ServiceOrder.aggregate(serviceOrderPipeline),
-      POS.aggregate(posPipeline),
-      Customer.aggregate(customersPipeline),
-      Employee.aggregate(employeePipeline),
-      Product.aggregate(productsPipeline),
-      POS.aggregate(bestSellingProductsPipeline), // or handle in a separate pipeline if needed
-      Part.aggregate(partsPipeline),
-      POS.aggregate(bestSellingPartsPipeline),
+      billingModel.aggregate(billingPipeline),
+      serviceOrderModel.aggregate(serviceOrderPipeline),
+      posModel.aggregate(posPipeline),
+      customerModel.aggregate(customersPipeline),
+      employeeModel.aggregate(employeePipeline),
+      productModel.aggregate(productsPipeline),
+      posModel.aggregate(bestSellingProductsPipeline),
+      partsModel.aggregate(partsPipeline),
+      posModel.aggregate(bestSellingPartsPipeline),
     ]);
 
     // ------------------ PARSE BILLING RESULTS ------------------
+
     const {
       totalRevenue = 0,
+      totalPaid = 0,
       totalDue = 0,
       totalTax = 0,
     } = billingResult[0]?.summary?.[0] || {};
@@ -437,6 +419,10 @@ export const getDashboardData = async (req: Request, res: Response) => {
       statusBreakdown.find((s: any) => s._id === "pending")?.count || 0;
     const completedServiceOrders =
       statusBreakdown.find((s: any) => s._id === "completed")?.count || 0;
+    const cancelledServiceOrders =
+      statusBreakdown.find((s: any) => s._id === "cancelled")?.count || 0;
+    const delayedServiceOrders =
+      statusBreakdown.find((s: any) => s._id === "delayed")?.count || 0;
 
     // ------------------ PARSE POS RESULTS ------------------
     const posFacet = posResult[0] || {};
@@ -460,8 +446,10 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     // Best-selling products aggregator from bestSellingProductsResult
     const bestProducts = bestSellingProductsResult.map((item: any) => ({
-      productId: item._id,
+      _id: item._id,
       totalSold: item.totalSold,
+      name: item.productName,
+      price: item.productPrice,
     }));
 
     // ------------------ PARSE PARTS RESULTS ------------------
@@ -471,17 +459,20 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     // Best-selling parts aggregator from bestSellingPartsResult
     const bestParts = bestSellingPartsResult.map((item: any) => ({
-      partId: item._id,
-      totalUsed: item.totalUsed,
+      _id: item._id,
+      totalSold: item.totalSold,
+      name: item.partName,
+      price: item.partPrice,
     }));
 
-    // ------------------ ASSEMBLE FINAL RESPONSE ------------------
+    // Final Response
     const response = {
       financial: {
+        totalPaid,
         totalRevenue,
         totalDue,
         totalTax,
-        revenueTrend, // daily/weekly trend
+        revenueTrend,
       },
       sales: {
         totalServiceOrders,
@@ -490,7 +481,9 @@ export const getDashboardData = async (req: Request, res: Response) => {
         posOrdersTrend,
         pendingServiceOrders,
         completedServiceOrders,
-        popularServices, // top 5 services
+        cancelledServiceOrders,
+        delayedServiceOrders,
+        popularServices,
       },
       customers: {
         totalCustomers,
@@ -503,16 +496,21 @@ export const getDashboardData = async (req: Request, res: Response) => {
       products: {
         totalProducts,
         lowStockProducts,
-        bestProducts, // best-selling
+        bestProducts,
       },
       parts: {
         totalParts,
         lowStockParts,
-        bestParts, // best-selling
+        bestParts,
       },
     };
 
-    return apiResponse(res, 200, "Dashboard data retrieved successfully", response);
+    return apiResponse(
+      res,
+      200,
+      "Dashboard data retrieved successfully",
+      response
+    );
   } catch (error: any) {
     console.error("Error fetching dashboard data:", error);
     return apiError(res, 500, "Failed to fetch dashboard data", error.message);

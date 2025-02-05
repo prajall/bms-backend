@@ -243,9 +243,7 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
 
     const skip = (page - 1) * limit;
 
-    // Aggregation pipeline
     const pipeline: PipelineStage[] = [
-      //join customer and service
       {
         $lookup: {
           from: "customers",
@@ -254,8 +252,12 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
           as: "customer",
         },
       },
-      { $unwind: "$customer" },
-
+      {
+        $unwind: {
+          path: "$customer",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $lookup: {
           from: "services",
@@ -264,12 +266,13 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
           as: "service",
         },
       },
-      { $unwind: "$service" },
-
-      // search filter
+      {
+        $unwind: {
+          path: "$service",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       { $match: match },
-
-      // to fetch totalOrders in single query
       {
         $facet: {
           data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: -1 } }],

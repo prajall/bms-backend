@@ -1,8 +1,8 @@
 import express from "express";
-import { getKPI } from "./dashboard.controller";
+import { getDashboardData } from "./dashboard.controller";
 
 const router = express.Router();
 
-router.get("/kpi", getKPI);
+router.get("/", getDashboardData);
 
 export default router;

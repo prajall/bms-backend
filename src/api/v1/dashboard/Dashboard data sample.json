@@ -1,0 +1,244 @@
+{
+  "success": true,
+  "message": "Dashboard data retrieved successfully",
+  "data": {
+    "financial": {
+      "totalPaid": 1100,
+      "totalRevenue": 2200,
+      "totalDue": 1300,
+      "totalTax": 0,
+      "revenueTrend": [
+        {
+          "_id": "2025-02-02",
+          "dailyRevenue": 0
+        },
+        {
+          "_id": "2025-02-04",
+          "dailyRevenue": 0
+        }
+      ]
+    },
+    "sales": {
+      "totalServiceOrders": 5,
+      "serviceOrdersTrend": [
+        {
+          "count": 2,
+          "date": "2025-02-02"
+        },
+        {
+          "count": 3,
+          "date": "2025-02-04"
+        }
+      ],
+      "totalPosOrders": 39,
+      "posOrdersTrend": [
+        {
+          "count": 3,
+          "date": "2024-12-17"
+        },
+        {
+          "count": 3,
+          "date": "2025-01-05"
+        },
+        {
+          "count": 1,
+          "date": "2025-01-06"
+        },
+        {
+          "count": 2,
+          "date": "2025-01-10"
+        },
+        {
+          "count": 19,
+          "date": "2025-01-23"
+        },
+        {
+          "count": 7,
+          "date": "2025-01-26"
+        },
+        {
+          "count": 2,
+          "date": "2025-01-28"
+        },
+        {
+          "count": 2,
+          "date": "2025-02-01"
+        }
+      ],
+      "pendingServiceOrders": 4,
+      "completedServiceOrders": 1,
+      "popularServices": [
+        {
+          "count": 2,
+          "service": {
+            "_id": "679de127174441ece3b148fc",
+            "title": "Filter Servicing",
+            "serviceType": "maintenance",
+            "serviceCharge": 500
+          }
+        },
+        {
+          "count": 2,
+          "service": {
+            "_id": "67a1c9e84d434be9b443620d",
+            "title": "Maintenance",
+            "serviceType": "maintenance",
+            "serviceCharge": 900
+          }
+        },
+        {
+          "count": 1,
+          "service": {
+            "_id": "67a1ca124d434be9b4436212",
+            "title": "Motor Fixing",
+            "serviceType": "repair",
+            "serviceCharge": 1200
+          }
+        }
+      ]
+    },
+    "customers": {
+      "totalCustomers": 3,
+      "customerTrend": [
+        {
+          "count": 1,
+          "date": "2025-01-22"
+        },
+        {
+          "count": 1,
+          "date": "2025-02-01"
+        },
+        {
+          "count": 1,
+          "date": "2025-02-02"
+        }
+      ]
+    },
+    "employees": {
+      "totalEmployees": 2,
+      "employeeTrend": [
+        {
+          "date": "2025-01-26",
+          "count": 1
+        },
+        {
+          "date": "2025-02-03",
+          "count": 1
+        }
+      ]
+    },
+    "products": {
+      "totalProducts": 5,
+      "lowStockProducts": [],
+      "bestProducts": [
+        {
+          "_id": "67497db3eb2ec2d8f74c96b5",
+          "totalSold": 32,
+          "name": "RO Water Filter",
+          "price": 2500
+        },
+        {
+          "_id": "673ef68ce5bdecbbc7d3d890",
+          "totalSold": 25,
+          "name": "Smart LED Desk Lamp",
+          "price": 1999
+        },
+        {
+          "_id": "673ef6cde5bdecbbc7d3d89a",
+          "totalSold": 12,
+          "name": "Smart LED Desk Lamp",
+          "price": 1999
+        },
+        {
+          "_id": "673ef6a7e5bdecbbc7d3d896",
+          "totalSold": 11,
+          "name": "Smart LED Desk Lamp",
+          "price": 1999
+        },
+        {
+          "_id": null,
+          "totalSold": 6,
+          "name": "Unknown Product",
+          "price": 0
+        }
+      ]
+    },
+    "parts": {
+      "totalParts": 8,
+      "lowStockParts": [
+        {
+          "_id": "6763debaed2dc0497ff01935",
+          "name": "Part Test....",
+          "stock": 0
+        },
+        {
+          "_id": "677f88b5449ed7e043067459",
+          "name": "Image test",
+          "stock": 2
+        }
+      ],
+      "bestParts": [
+        {
+          "_id": "675bda30cd1793599c3fca61",
+          "totalSold": 25,
+          "name": "लोक सेवा आयोग- PSC",
+          "price": 1000
+        },
+        {
+          "_id": "6763debaed2dc0497ff01935",
+          "totalSold": 5,
+          "name": "Part Test....",
+          "price": 3000
+        },
+        {
+          "_id": "677f88b5449ed7e043067459",
+          "totalSold": 3,
+          "name": "Image test",
+          "price": 50
+        },
+        {
+          "_id": null,
+          "totalSold": 2,
+          "name": "Unknown part",
+          "price": 0
+        },
+        {
+          "_id": "67597470e2b687eed891b95a",
+          "totalSold": 2,
+          "name": "New Part223",
+          "price": 1300
+        },
+        {
+          "_id": "673ef6cde5bdecbbc7d3d89a",
+          "totalSold": 2,
+          "name": "Unknown part",
+          "price": 0
+        },
+        {
+          "_id": "67597414e2b687eed891b945",
+          "totalSold": 1,
+          "name": "New Part223",
+          "price": 1300
+        },
+        {
+          "_id": "6759754de2b687eed891b96b",
+          "totalSold": 1,
+          "name": "new2",
+          "price": 33212331
+        },
+        {
+          "_id": "67497db3eb2ec2d8f74c96b5",
+          "totalSold": 1,
+          "name": "Unknown part",
+          "price": 0
+        },
+        {
+          "_id": "674d89d5d7273524cb78a883",
+          "totalSold": 1,
+          "name": "Unknown part",
+          "price": 0
+        }
+      ]
+    }
+  }
+}
