@@ -425,7 +425,7 @@ export const getDashboardData = async (req: Request, res: Response) => {
       totalTax = 0,
     } = billingResult[0]?.summary?.[0] || {};
 
-    const revenueTrend = billingResult[0]?.revenue || [];
+    const revenueTrend = billingResult[0]?.revenueTrend || [];
 
     // ------------------ PARSE SERVICE ORDER RESULTS ------------------
     const serviceOrderFacet = serviceOrderResult[0] || {};
@@ -488,6 +488,11 @@ export const getDashboardData = async (req: Request, res: Response) => {
 
     // Final Response
     const response = {
+      metaData: {
+        trendType,
+        startDate,
+        endDate,
+      },
       financial: {
         totalPaid,
         totalRevenue,
