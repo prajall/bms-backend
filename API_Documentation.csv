@@ -1,0 +1,108 @@
+Sno,Title,URL,Method,Auth?,Input (Required Fields),Detail
+1,Login User,https://backend.kinniko.com/api/v1/user/login,POST,No,"email (string, required),
+password (string, min 8 chars, required)",User logs in with email and password. Returns auth token on success.
+2,Get User Info,https://backend.kinniko.com/api/v1/user/info,GET,Yes,None,Fetches user details of the authenticated user.
+3,Update User Role,https://backend.kinniko.com/api/v1/user/role/:id,PATCH,Yes,"id (MongoDB ObjectId, required)",Updates the role of a user by ID. Requires authentication.
+,,,,,,
+,,,,,,
+,Create Employee,https://backend.kinniko.com/api/v1/employee/,POST,Yes,"email (string, required, valid email format) 
+password (string, required, min 8 characters) 
+role (MongoDB ObjectId, optional) 
+name (string, required) 
+image (string, optional) 
+gender (string, required, 
+must be one of: male, female, or other) 
+address.country (string, required) 
+address.province (string, required) 
+address.city (string, required) 
+address.addressLine (string, required) 
+contactNo (string, required, valid phone number format between 7-15 digits) 
+department (string, required)",Creates a new employee with given details. Requires authentication and necessary permissions.
+,Get All Employees,https://backend.kinniko.com/api/v1/employee/,GET,Yes,None,Fetches a list of all employees. Requires authentication and necessary permissions.
+,Get Employee Details,https://backend.kinniko.com/api/v1/employee/:id,GET,No,"id (MongoDB ObjectId, required)",Fetches details of a specific employee by ID.
+,Update Employee,https://backend.kinniko.com/api/v1/employee/:id,PATCH,No,"id (MongoDB ObjectId, required)
+Optional fields: email
+password
+name
+gender
+contactNo
+department
+address.country
+address.province
+address.city
+address.addressLine",Updates an employee's details by ID. Optional fields can be updated.
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,Service Orders:,,,,,
+,Create Service Order,https://backend.kinniko.com/api/v1/service-order/,POST,Yes,"orderId* (string)
+order* (mongoId)
+service* (mongoId)
+date* (ISO 8601 date format)
+serviceCharge* (float, non-negative)
+parentServiceOrder (mongoId
+customer* (mongoId)
+isRecurring (boolean)
+interval (integer, min 0)
+nextServiceDate (ISO 8601 format)
+additionalNotes (string)
+",Creates a new service order. Requires authentication and necessary permissions.
+,Get All Service Orders,https://backend.kinniko.com/api/v1/service-order/,GET,Yes,,Fetches all service orders. Requires authentication and necessary permissions.
+,Get Mini Service Orders,https://backend.kinniko.com/api/v1/service-order/mini-list,GET,Yes,,Fetches a summarized list of service orders.
+,Get Upcomming Recurring Service Orders,https://backend.kinniko.com/api/v1/service-order/recurring,GET,Yes,,Fetch upcomming recurring service (unordered) for order confirmation
+,Get Service Order By ID,https://backend.kinniko.com/api/v1/service-order/:id,GET,Yes,,Fetches a service order by its ID.
+,Get Service Orders By Order ID,https://backend.kinniko.com/api/v1/service-order/orderid/:orderId,GET,Yes,,Fetches service orders associated with a given Order ID.
+,Update Service Order,https://backend.kinniko.com/api/v1/service-order/:id,PATCH,Yes,"orderId* (string)
+order* (mongoId)
+service* (mongoId)
+date* (ISO 8601 date format)
+serviceCharge* (float, non-negative)
+parentServiceOrder (mongoId
+customer* (mongoId)
+isRecurring (boolean)
+interval (integer, min 0)
+nextServiceDate (ISO 8601 format)
+additionalNotes (string)
+",Updates an existing service order by ID. Requires authentication and necessary permissions.
+,Delete Service Order,https://backend.kinniko.com/api/v1/service-order/:id,DELETE,Yes,,Deletes a service order by ID. Requires authentication and necessary permissions.
+,,,,,,
+,,,,,,
+,,,,,,
+,POS,,,,,
+,,,,,,
+,Create POS,https://backend.kinniko.com/api/v1/pos/,POST,No,"customerType* (string, values: walking, registered)
+products [ ] : {
+  product (mongoId),
+  quantity
+  price
+}
+parts [ ] : {
+  part (mongoId),
+  quantity 
+  price 
+},
+tax,
+discount,
+paidAmount,
+totalPrice* 
+subTotal* ","Creates a new POS entry with products, parts, installations, and pricing details."
+,Get All POS,https://backend.kinniko.com/api/v1/pos/,GET,Yes,,Fetches all POS records. Requires authentication and necessary permissions.
+,Get Mini POS List,https://backend.kinniko.com/api/v1/pos/mini-list,GET,Yes,,Fetches a summarized list of POS records.
+,Get POS By ID,https://backend.kinniko.com/api/v1/pos/:id,GET,Yes,,Fetches POS details by ID.
+,Update POS,https://backend.kinniko.com/api/v1/pos/:id/,PUT,Yes,"customerType* (string, values: walking, registered)
+products [ ] : {
+  product (mongoId),
+  quantity
+  price
+}
+parts [ ] : {
+  part (mongoId),
+  quantity 
+  price 
+},
+tax,
+discount,
+paidAmount*,
+totalPrice* 
+subTotal* ",Updates an existing POS record by ID.

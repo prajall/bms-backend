@@ -44,6 +44,7 @@ router.get(
   checkPermission("service_order", "view"),
   getServiceOrdersByOrderId
 );
+
 router.patch(
   "/:id",
   checkPermission("service_order", "update"),

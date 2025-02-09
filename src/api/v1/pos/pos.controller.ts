@@ -148,12 +148,12 @@ export const getAllPOS = async (req: Request, res: Response) => {
     const posRecords = await POS.find(query)
       .populate("products.product", "name price")
       .populate("parts.part", "name price")
-      // .populate("services.service", "name price")
-      // .populate({
-      //   path: "installations.installationId",
-      //   select: "name price",
-      //   strictPopulate: false,
-      // })
+      .populate("services.service", "name price")
+      .populate({
+        path: "installations.installationId",
+        select: "name price",
+        strictPopulate: false,
+      })
       .populate("customer", "name email")
       .skip(skip)
       .limit(limit);

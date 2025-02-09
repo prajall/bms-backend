@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.post(
   "/",
-  //   checkPermission("pos", "create"),
+  checkPermission("pos", "create"),
   validatePOS,
   handleValidation,
   createPOS

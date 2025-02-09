@@ -53,8 +53,4 @@ export const customerValidation = [
     .withMessage("Phone number is required")
     .matches(/^\+?[0-9]{7,15}$/)
     .withMessage("Invalid phone number format"),
-
-  body("mobileNo1").optional(),
-
-  body("mobileNo2").optional(),
 ];

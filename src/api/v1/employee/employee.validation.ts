@@ -32,27 +32,13 @@ export const employeeValidation = [
     .isIn(["male", "female", "other"])
     .withMessage("Gender must be either male, female, or other"),
 
-  body("address.country")
-    .notEmpty()
-    .withMessage("Country is required")
-    .isString()
-    .withMessage("Country must be a string"),
+  body("address.country").isString().withMessage("Country must be a string"),
 
-  body("address.province")
-    .notEmpty()
-    .withMessage("Province is required")
-    .isString()
-    .withMessage("Province must be a string"),
+  body("address.province").isString().withMessage("Province must be a string"),
 
-  body("address.city")
-    .notEmpty()
-    .withMessage("City is required")
-    .isString()
-    .withMessage("City must be a string"),
+  body("address.city").isString().withMessage("City must be a string"),
 
   body("address.addressLine")
-    .notEmpty()
-    .withMessage("Address line is required")
     .isString()
     .withMessage("Address line must be a string"),
 
@@ -62,11 +48,7 @@ export const employeeValidation = [
     .matches(/^\+?[0-9]{7,15}$/)
     .withMessage("Invalid contact number format"),
 
-  body("department")
-    .notEmpty()
-    .withMessage("Department is required")
-    .isString()
-    .withMessage("Department must be a string"),
+  body("department").isString().withMessage("Department must be a string"),
 ];
 
 export const updateEmployeeValidation = [

@@ -215,12 +215,21 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, parentServiceOrder, search } = req.query;
+    const { customer, parentServiceOrder, search, status } = req.query;
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
 
     const match: any = {};
 
+    const allowedStatus = ["pending", "completed", "cancelled", "delayed"];
+    if (status && !allowedStatus.includes(status as string)) {
+      return apiError(
+        res,
+        400,
+        "Invalid status. Please include 'pending', 'completed', 'cancelled' or 'delayed'"
+      );
+    }
     // Filter by direct fields
     if (customer) {
       match.customer = new mongoose.Types.ObjectId(customer as string);
@@ -229,6 +238,9 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
       match.parentServiceOrder = new mongoose.Types.ObjectId(
         parentServiceOrder as string
       );
+    }
+    if (status) {
+      match.status = status;
     }
 
     // Build search query
@@ -590,13 +602,12 @@ export const deleteServiceOrder = async (req: Request, res: Response) => {
 
 export const getNextRecurringOrders = async (req: Request, res: Response) => {
   try {
-    const { startDate, endDate } = req.body;
+    console.log("sdlfkjsdlkfj");
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(end.getDate() + 100);
 
-    if (!endDate || isNaN(Date.parse(endDate))) {
-      return apiError(res, 400, "Invalid or missing end date");
-    }
-
-    const end = new Date(endDate);
+    console.log("End date", end);
 
     const orders = await ServiceOrder.find({
       isRecurring: true,

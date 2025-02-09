@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { apiResponse, apiError } from "../../../utils/response.util";
 import { PipelineStage } from "mongoose";
-import { fetchOtherData, fetchRevenue } from "./dashboard.function";
 import billingModel from "../billing/billing.model";
 import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
 import posModel from "../pos/pos.model";
@@ -9,7 +8,7 @@ import customerModel from "../customer/customer.model";
 import employeeModel from "../employee/employee.model";
 import productModel from "../items/products/product.model";
 import partsModel from "../items/parts/parts.model";
-import { group } from "console";
+
 export const getDashboardData = async (req: Request, res: Response) => {
   const LOW_STOCK_THRESHOLD = 5;
   try {

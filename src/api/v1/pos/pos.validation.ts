@@ -49,51 +49,26 @@ export const validatePOS = [
     .isFloat({ min: 0 })
     .withMessage("Part price must be a positive number"),
 
-  // Validate services array
-  // body("services")
+  // Validate installations array
+  // body("installations")
   //   .optional()
   //   .isArray()
-  //   .withMessage("Services must be an array"),
-  // body("services.*.serviceId")
+  //   .withMessage("Installations must be an array"),
+  // body("installations.*.installationId")
   //   .notEmpty()
-  //   .withMessage("Service ID is required")
+  //   .withMessage("Installation ID is required")
   //   .isMongoId()
-  //   .withMessage("Invalid service ID"),
-  // body("services.*.price")
+  //   .withMessage("Invalid installation ID"),
+  // body("installations.*.price")
   //   .notEmpty()
-  //   .withMessage("Service price is required")
+  //   .withMessage("Installation price is required")
   //   .isFloat({ min: 0 })
-  //   .withMessage("Service price must be a positive number"),
-  // body("services.*.additionalNotes")
+  //   .withMessage("Installation price must be a positive number"),
+  // body("installations.*.additionalNotes")
   //   .optional()
   //   .isString()
   //   .isLength({ max: 1000 })
   //   .withMessage("Additional notes must not exceed 1000 characters"),
-  // body("services.*.date")
-  //   .optional()
-  //   .isISO8601()
-  //   .withMessage("Invalid date format"),
-
-  // Validate installations array
-  body("installations")
-    .optional()
-    .isArray()
-    .withMessage("Installations must be an array"),
-  body("installations.*.installationId")
-    .notEmpty()
-    .withMessage("Installation ID is required")
-    .isMongoId()
-    .withMessage("Invalid installation ID"),
-  body("installations.*.price")
-    .notEmpty()
-    .withMessage("Installation price is required")
-    .isFloat({ min: 0 })
-    .withMessage("Installation price must be a positive number"),
-  body("installations.*.additionalNotes")
-    .optional()
-    .isString()
-    .isLength({ max: 1000 })
-    .withMessage("Additional notes must not exceed 1000 characters"),
 
   // Validate totalPrice
   body("totalPrice")
