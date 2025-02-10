@@ -287,7 +287,7 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
       { $match: match },
       {
         $facet: {
-          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: -1 } }],
+          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: 1 } }],
           totalCount: [{ $count: "count" }],
         },
       },

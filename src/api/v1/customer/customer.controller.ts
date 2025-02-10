@@ -178,6 +178,7 @@ export const getCustomerDetails = async (req: Request, res: Response) => {
     const customer = await Customer.findById(id).populate({
       path: "user",
       select: "email password",
+      strictPopulate: false,
     });
 
     if (!customer) {

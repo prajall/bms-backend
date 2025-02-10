@@ -146,18 +146,33 @@ export const getAllPOS = async (req: Request, res: Response) => {
     const totalPages = Math.ceil(totalPOS / limit);
 
     const posRecords = await POS.find(query)
-      .populate("products.product", "name price")
-      .populate("parts.part", "name price")
-      .populate("services.service", "name price")
+      .populate({
+        path: "products.product",
+        select: "name price",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "parts.part",
+        select: "name price",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "services.service",
+        select: "name price",
+        strictPopulate: false,
+      })
       .populate({
         path: "installations.installationId",
         select: "name price",
         strictPopulate: false,
       })
-      .populate("customer", "name email")
+      .populate({
+        path: "customer",
+        select: "name email",
+        strictPopulate: false,
+      })
       .skip(skip)
       .limit(limit);
-
     return apiResponse(res, 200, "POS records retrieved successfully", {
       pagination: {
         currentPage: page,

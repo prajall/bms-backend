@@ -49,11 +49,11 @@ export const validateBilling = [
     }),
 
   // Type validation
-  // body("type")
-  //   .notEmpty()
-  //   .withMessage("Type is required")
-  //   .isIn(["service", "pos", "customer"])
-  //   .withMessage("Type must be one of 'service', 'pos', or 'customer'"),
+  body("type")
+    .notEmpty()
+    .withMessage("Type is required")
+    .isIn(["service", "pos"])
+    .withMessage("Type must be one of 'service', 'pos'"),
 
   // Paid amount validation
   body("paidAmount")
