@@ -2,10 +2,14 @@ import { Request, Response } from "express";
 import Part from "./parts.model";
 import { apiResponse, apiError } from "../../../../utils/response.util";
 import mongoose from "mongoose";
+import path from "path";
+import fs from "fs";
+import sharp from "sharp";
+import { uploadOnCloudinary } from "../../../../utils/cloudinary.util";
 
 export const createPart = async (req: Request, res: Response) => {
   try {
-    const employee = req.employee;
+    const user = req.user;
 
     const existingPart = await Part.findOne({ serialNo: req.body.serialNo });
 
@@ -16,6 +20,32 @@ export const createPart = async (req: Request, res: Response) => {
         "A part with this serial number already exists"
       );
     }
+    // image upload
+
+    //  const mockPart:Part = {};
+
+    // const tempDir = path.join(__dirname, "../uploads");
+    // if (!fs.existsSync(tempDir)) {
+    //   fs.mkdirSync(tempDir);
+    // }
+    //     const files = req.files as Express.Multer.File[];
+    //     const originalFilePath = files[0].path;
+    //     const outputFilePath = path.join(tempDir, `${files[0].originalname}.webp`);
+
+    //     const image = await sharp(originalFilePath)
+    //       .resize({ width: Number(300) }) //width: 300px
+    //       .toFormat("webp")
+    //       .toFile(outputFilePath);
+    //         console.log("compressed Image;", image);
+    //       const uploadedImage = await uploadOnCloudinary(outputFilePath);
+
+    //        if (uploadedImage) {
+    //          mockPart.image = uploadedImage.secure_url;
+    //       }
+
+    //       fs.unlinkSync(outputFilePath);
+
+    console.log("Base Image: ", req.body.baseImage);
 
     const part = await Part.create({
       name: req.body.name,
@@ -30,7 +60,7 @@ export const createPart = async (req: Request, res: Response) => {
       modelNo: req.body.modelNo,
       serialNo: req.body.serialNo,
       status: req.body.status,
-      createdBy: employee._id,
+      createdBy: user._id,
     });
 
     if (!part) {
@@ -154,7 +184,7 @@ export const getPartById = async (req: Request, res: Response) => {
 export const updatePart = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const employee = req.employee;
+    const user = req.user;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return apiError(res, 400, "Invalid part ID format");
@@ -191,7 +221,7 @@ export const updatePart = async (req: Request, res: Response) => {
         modelNo: req.body.modelNo,
         serialNo: req.body.serialNo,
         status: req.body.status,
-        updatedBy: employee._id,
+        updatedBy: user._id,
       },
       {
         new: true,

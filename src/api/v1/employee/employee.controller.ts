@@ -86,7 +86,7 @@ export const getAllEmployees = async (req: Request, res: Response) => {
           foreignField: "_id",
           as: "user",
         },
-      }, 
+      },
       { $unwind: "$user" }, // Unwind the joined User document
 
       {

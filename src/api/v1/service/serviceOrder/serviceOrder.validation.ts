@@ -34,16 +34,24 @@ export const serviceOrderValidation = [
     .isInt({ min: 0 })
     .withMessage("Interval must be a positive integer"),
   body("nextServiceDate")
-    .optional()
-    .isISO8601()
-    .withMessage("Invalid next service date format. Please use ISO 8601 format")
-    .toDate()
+    .optional({ values: "null" }) // Allows empty value ("" or null)
     .custom((value, { req }) => {
+      if (value) {
+        if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(value)) {
+          throw new Error(
+            "Invalid next service date format. Please use ISO 8601 format"
+          );
+        }
+      }
+
+      // Check for isRecurring condition
       if (req.body.isRecurring && !value) {
         throw new Error("Next Service date is required for recurring service");
       }
+
       return true;
-    }),
+    })
+    .toDate(),
   body("serviceCharge")
     .notEmpty()
     .withMessage("Service charge is required")
@@ -59,6 +67,5 @@ export const serviceOrderValidation = [
     .optional()
     .isString()
     .withMessage("Order ID must be a string"),
-
   body("order").optional().isMongoId().withMessage("Invalid Order ID format"),
 ];

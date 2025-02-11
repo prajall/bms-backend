@@ -14,6 +14,7 @@ import { checkPermission } from "../../../middlewares/permissions.middleware";
 import { authValidation } from "../../../middlewares/auth.middleware";
 import { upload } from "../../../utils/multer.util";
 import parseNestedFields from "../../../middlewares/parseFormData";
+import { uploadSingleImage } from "../../../middlewares/other.middleware";
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.post(
   authValidation,
   checkPermission("employee", "create"),
   upload.single("image"),
+  uploadSingleImage,
   parseNestedFields,
   employeeValidation,
   handleValidation,

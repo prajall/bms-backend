@@ -10,8 +10,8 @@ export const createCustomer = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const image = req.file;
-    console.log("Image: ", image);
+    // const image = req.file;
+    // console.log("Image: ", image);
 
     console.log("body:", req.body);
 
@@ -22,17 +22,17 @@ export const createCustomer = async (req: Request, res: Response) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let imageUrl = "";
-    if (image && image.size > 500000) {
-      return apiError(res, 400, "Image size should be less than 500KB");
-    }
-    if (image) {
-      const response = await uploadOnCloudinary(image.path);
-      console.log("Cloudinary response:", response);
-      if (response) {
-        imageUrl = response.secure_url;
-      }
-    }
+    // let imageUrl = "";
+    // if (image && image.size > 500000) {
+    //   return apiError(res, 400, "Image size should be less than 500KB");
+    // }
+    // if (image) {
+    //   const response = await uploadOnCloudinary(image.path);
+    //   console.log("Cloudinary response:", response);
+    //   if (response) {
+    //     imageUrl = response.secure_url;
+    //   }
+    // }
 
     // Create user
     const createdUser = await User.create({
@@ -48,7 +48,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const customer = await Customer.create({
       user: createdUser._id,
       name: req.body.name,
-      image: imageUrl,
+      image: req.body.image,
       gender: req.body.gender,
       address: {
         country: req.body.address.country,

@@ -1,4 +1,4 @@
-import { Types as MongooseTypes } from "mongoose";
+import { Types as MongooseTypes, Types } from "mongoose";
 
 export interface PermissionProp {
   module: string;
@@ -57,6 +57,31 @@ export interface ProductProp {
     metaTitle?: string;
     metaDescription?: string;
   };
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface Image {
+  small?: string;
+  medium?: string;
+  full?: string;
+}
+
+export interface PartProp {
+  name: string;
+  description?: string;
+  brand: string;
+  discount: number;
+  image?: Image;
+  costPrice: number;
+  sellingPrice: number;
+  stock: number;
+  tags?: string[];
+  modelNo: string;
+  serialNo?: string;
+  status: "active" | "inactive" | "archived";
+  createdBy: Types.ObjectId;
+  updatedBy?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }

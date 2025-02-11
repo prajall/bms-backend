@@ -28,7 +28,7 @@ const partsSchema = new mongoose.Schema(
     baseImage: {
       small: String,
       medium: String,
-      full: String,
+      large: String,
     },
     costPrice: {
       type: Number,

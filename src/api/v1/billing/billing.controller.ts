@@ -80,12 +80,13 @@ export const createBilling = async (req: Request, res: Response) => {
             .populate("customer", "name phoneNo address");
 
           if (!doc) {
-            throw new Error(`POS order not found: ${order.posOrder}`);
+            throw new Error(`POS order not found`);
           }
 
           return { orderDoc: doc, ...order };
         })
       );
+
       // customer = orderDocs[0]?.orderDoc?.customer;
 
       totalAmount = orderDocs.reduce((sum, { orderDoc }) => {
@@ -173,12 +174,18 @@ export const createBilling = async (req: Request, res: Response) => {
     );
   } catch (error: any) {
     console.error("Error creating billing:", error);
-    return apiError(res, 500, "Error creating billing", error.message);
+    return apiError(
+      res,
+      500,
+      error.message ? error.message : "Error creating billing",
+      error.message
+    );
   }
 };
 
 export const getBillings = async (req: Request, res: Response) => {
   const { customerId, serviceOrders, date, status } = req.body;
+  const { search } = req.query;
 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;

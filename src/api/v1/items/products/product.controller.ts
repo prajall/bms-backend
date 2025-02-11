@@ -5,8 +5,8 @@ import mongoose from "mongoose";
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    console.log("base Images:",req.body.baseImage)
-    const user = req.user
+    console.log("base Images:", req.body.baseImage);
+    const user = req.user;
     const existingProduct = await Product.findOne({
       $or: [
         { serialNo: req.body.serialNo },
@@ -14,10 +14,8 @@ export const createProduct = async (req: Request, res: Response) => {
       ],
     });
 
-    console.log("SEO: ",req.body.seo)
-
     if (existingProduct) {
-      console.log(existingProduct)
+      console.log(existingProduct);
       const isDuplicateSerial = existingProduct.serialNo === req.body.serialNo;
       const isDuplicateSlug = existingProduct.seo?.slug === req.body.seo?.slug;
 
@@ -33,8 +31,8 @@ export const createProduct = async (req: Request, res: Response) => {
           400,
           "A product with this serial number already exists"
         );
-      } else if (isDuplicateSlug && existingProduct.seo?.slug  ) {
-        console.log("duplicate slug",existingProduct.seo?.slug)
+      } else if (isDuplicateSlug && existingProduct.seo?.slug) {
+        console.log("duplicate slug", existingProduct.seo?.slug);
         return apiError(
           res,
           400,

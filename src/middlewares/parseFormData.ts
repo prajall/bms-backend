@@ -29,7 +29,6 @@ const parseNestedFields = (
   res: Response,
   next: NextFunction
 ): void => {
-  console.log("Parse nested: ",req.body)
   if (req.body && typeof req.body === "object") {
     req.body = reconstructNestedObject(req.body);
 
@@ -72,7 +71,11 @@ function isJSON(value: any): boolean {
   }
 }
 
-export const parseFormData = (req: Request, res: Response, next: NextFunction) => {
+export const parseFormData = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   for (const key in req.body) {
     if (isJSON(req.body[key])) {
       req.body[key] = JSON.parse(req.body[key]);

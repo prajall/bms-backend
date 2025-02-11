@@ -84,7 +84,7 @@ const productSchema = new mongoose.Schema(
     },
     manufactureDate: {
       type: Date,
-      required: true,
+      required: false,
     },
     warranty: {
       duration: Number, // in months
@@ -134,7 +134,7 @@ const productSchema = new mongoose.Schema(
       slug: {
         type: String,
         // required: true,
-        unique: true,
+        // unique: true,
         trim: true,
       },
       tags: [

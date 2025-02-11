@@ -14,8 +14,6 @@ export const productValidation = [
 
   body("brand")
     .trim()
-    .notEmpty()
-    .withMessage("Brand is required")
     .isLength({ max: 50 })
     .withMessage("Brand name should not exceed 50 characters"),
 
@@ -45,12 +43,6 @@ export const productValidation = [
   body("condition")
     .isIn(["new", "used", "refurbished"])
     .withMessage("Invalid condition value"),
-
-  body("manufactureDate")
-    .notEmpty()
-    .withMessage("Manufacture date is required")
-    .isISO8601()
-    .withMessage("Invalid date format. Please use ISO 8601 format"),
 
   body("warranty.duration")
     .optional()

@@ -6,6 +6,8 @@ import Service from "../service/service/service.model";
 import Billing from "../billing/billing.model";
 import { createOrder } from "../order/order.controller";
 import { createBilling } from "../billing/billing.controller";
+import productModel from "../items/products/product.model";
+import partsModel from "../items/parts/parts.model";
 
 const WALKING_CUSTOMER_ID = "67554286140992b96228ae97";
 export const createPOS = async (req: Request, res: Response) => {
@@ -92,6 +94,20 @@ export const createPOS = async (req: Request, res: Response) => {
       return apiError(res, 400, "Failed to create POS record");
     }
 
+    if (products && products.length > 0) {
+      for (const item of products) {
+        await productModel.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
+    }
+    if (parts && parts.length > 0) {
+      for (const item of parts) {
+        await partsModel.findByIdAndUpdate(item.part, {
+          $inc: { stock: -item.quantity },
+        });
+      }
+    }
     if (paidAmount > 0) {
       const mockRequest = {
         body: {

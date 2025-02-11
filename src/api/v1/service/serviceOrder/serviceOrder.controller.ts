@@ -215,7 +215,8 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, parentServiceOrder, search, status } = req.query;
+    const { customer, parentServiceOrder, search, status, paymentStatus } =
+      req.query;
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -230,6 +231,17 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
         "Invalid status. Please include 'pending', 'completed', 'cancelled' or 'delayed'"
       );
     }
+    const allowedpaymentStatus = ["paid", "unpaid", "partial"];
+    if (
+      paymentStatus &&
+      !allowedpaymentStatus.includes(paymentStatus as string)
+    ) {
+      return apiError(
+        res,
+        400,
+        "Invalid payment status. Please include 'paid', 'unpaid', 'partial'"
+      );
+    }
     // Filter by direct fields
     if (customer) {
       match.customer = new mongoose.Types.ObjectId(customer as string);
@@ -241,6 +253,9 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
     }
     if (status) {
       match.status = status;
+    }
+    if (paymentStatus) {
+      match.paymentStatus = paymentStatus;
     }
 
     // Build search query
@@ -287,7 +302,7 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
       { $match: match },
       {
         $facet: {
-          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: 1 } }],
+          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: -1 } }],
           totalCount: [{ $count: "count" }],
         },
       },

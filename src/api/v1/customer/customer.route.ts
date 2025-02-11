@@ -11,12 +11,14 @@ import {
 import { handleValidation } from "../../../middlewares/validation.middleware";
 import { upload } from "../../../utils/multer.util";
 import parseNestedFields from "../../../middlewares/parseFormData";
+import { uploadSingleImage } from "../../../middlewares/other.middleware";
 
 const router = Router();
 
 router.post(
   "/",
   upload.single("image"),
+  uploadSingleImage,
   parseNestedFields,
   customerValidation,
   handleValidation,
