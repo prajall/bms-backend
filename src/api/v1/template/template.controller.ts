@@ -115,7 +115,22 @@ export const createTemplate = async (req: Request, res: Response) => {
   }
 };
 
-export const getTemplateByName = async (req: Request, res: Response) => {
+export const getAllTemplate = async (req: Request, res: Response) => {
+  try {
+    const { type } = req.query;
+    let filter: { type?: string } = {};
+    if (type) {
+      filter.type = type.toString();
+    }
+    const templates = await templateModel.find();
+    return apiResponse(res, 200, "Templates retrieved successfully", templates);
+  } catch (error: any) {
+    console.error("Error fetching templates:", error.message);
+    return apiError(res, 500, "Internal server error", error);
+  }
+};
+
+export const getTemplateById = async (req: Request, res: Response) => {
   try {
     const { id } = req.query;
 
