@@ -30,11 +30,11 @@ export const uploadSingleImage = async (
 ) => {
   try {
     if (!req.file) {
-      return next(); // No file uploaded, move to next middleware
+      return next();
     }
 
     const imageFile = req.file;
-    const originalFilePath = imageFile.path; // Path of uploaded file
+    const originalFilePath = imageFile.path;
     const fileName = path.parse(imageFile.filename).name;
 
     const tempDir = path.join(__dirname, "../uploads");
@@ -42,21 +42,18 @@ export const uploadSingleImage = async (
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    // ✅ Use a different file for output
     const outputFilePath = path.join(tempDir, `${fileName}-processed.webp`);
 
     await sharp(originalFilePath)
       .resize({ width: 600 }) // Resize to 600px width
       .toFormat("webp")
-      .toFile(outputFilePath); // Save to a new file
+      .toFile(outputFilePath);
 
-    // ✅ Upload processed image to Cloudinary
     const uploadedImage = await uploadOnCloudinary(outputFilePath);
     if (uploadedImage) {
-      req.body.image = uploadedImage.url; // Store the image URL in req.body.image
+      req.body.image = uploadedImage.url;
     }
 
-    // ✅ Remove temporary files
     try {
       fs.unlinkSync(outputFilePath);
       fs.unlinkSync(originalFilePath);
@@ -64,7 +61,7 @@ export const uploadSingleImage = async (
       console.error("Error removing temporary files:", error);
     }
 
-    next(); // Proceed to next middleware
+    next();
   } catch (error) {
     console.error("Error processing and uploading image:", error);
     return res.status(500).json({ error: "Image processing failed" });

@@ -30,6 +30,7 @@ router.get("/:id", getCustomerDetails);
 router.patch(
   "/:id",
   upload.single("image"),
+  uploadSingleImage,
   parseNestedFields,
   customerValidation,
   handleValidation,

@@ -18,6 +18,7 @@ import serviceBillingRoutes from "./api/v1/billing/billing.route";
 import orderRoutes from "./api/v1/order/order.route";
 import reportRoutes from "./api/v1/reports/report.route";
 import dashboardRoutes from "./api/v1/dashboard/dashboard.route";
+import templateRoutes from "./api/v1/template/template.route";
 
 import { apiError, apiResponse } from "./utils/response.util";
 import cors from "cors";
@@ -162,6 +163,7 @@ apiRoutes.use(
   // authValidation,
   dashboardRoutes
 );
+apiRoutes.use("/template", upload.none(), templateRoutes);
 
 // image upload routes
 apiRoutes.use("/category", checkMaintenanceMode, categoryRoutes);

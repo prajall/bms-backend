@@ -39,6 +39,7 @@ router.get("/:id", getEmployeeDetails);
 router.patch(
   "/:id",
   upload.single("image"),
+  uploadSingleImage,
   parseNestedFields,
   updateEmployeeValidation,
   handleValidation,

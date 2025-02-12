@@ -206,6 +206,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
       return apiError(res, 404, "Customer not found");
     }
 
+    //update user model
     if (email || password) {
       const user: any = customer.user;
 
