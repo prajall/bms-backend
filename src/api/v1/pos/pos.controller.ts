@@ -187,6 +187,7 @@ export const getAllPOS = async (req: Request, res: Response) => {
         select: "name email",
         strictPopulate: false,
       })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
     return apiResponse(res, 200, "POS records retrieved successfully", {

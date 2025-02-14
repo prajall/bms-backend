@@ -220,7 +220,7 @@ export const getBillings = async (req: Request, res: Response) => {
 
     // ✅ Search Functionality
     if (search) {
-      const searchRegex = new RegExp(search as string, "i"); // Case-insensitive search
+      const searchRegex = new RegExp(search as string, "i");
       match.$or = [
         { "customer.name": searchRegex },
         { "customer.phoneNo": searchRegex },
@@ -231,7 +231,6 @@ export const getBillings = async (req: Request, res: Response) => {
       ];
     }
 
-    // ✅ Aggregation Pipeline
     const pipeline: PipelineStage[] = [
       {
         $lookup: {
@@ -272,7 +271,7 @@ export const getBillings = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$serviceOrdersData",
-          preserveNullAndEmptyArrays: true, // ✅ Prevents data loss when array is empty
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -286,10 +285,10 @@ export const getBillings = async (req: Request, res: Response) => {
       {
         $unwind: {
           path: "$serviceOrdersData.serviceOrder.service",
-          preserveNullAndEmptyArrays: true, // ✅ Ensures documents without services are not removed
+          preserveNullAndEmptyArrays: true,
         },
       },
-      { $match: match }, // ✅ Apply filters & search query
+      { $match: match },
       { $sort: { createdAt: -1 } },
       {
         $facet: {

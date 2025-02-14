@@ -3,11 +3,15 @@ import nodemailer from "nodemailer";
 import serviceOrderModel from "./api/v1/service/serviceOrder/serviceOrder.model";
 import { readConfig } from "./utils/config.utils";
 import axios from "axios";
+import templateModel from "./api/v1/template/template.model";
+import { replacePlaceholders, sendSms } from "./utils/template.util";
 
 const template =
   "Hello {{customer.name}}. This is to notify you that you have a service order for {{orderId}} today.";
-const OrderSmsId = "67ac6e2be7dca55eccb4e91a";
-const orderEmail = "67ac6e2be7dca55eccb4e91a";
+
+const OrderSmsTemplateId = "67ac6e2be7dca55eccb4e91a";
+// const orderEmail = "67ac6e2be7dca55eccb4e91a";
+
 //read notification time from business config
 const configHour =
   readConfig("business").notifications?.upcommingOrder?.notificationTime?.hour;
@@ -22,44 +26,18 @@ const notificationTimeHour =
 const notificationTimeMinute =
   configMinute > 0 ? (configMinute <= 59 ? configMinute : "00") : "00";
 
-//helper function to replace placeholders in the message template
-function replacePlaceholders(template: string, data: any, fallback: string) {
-  const regex = /{{(.*?)}}/g;
-
-  return template.replace(regex, (match, key) => {
-    const value = key
-      .trim()
-      .split(".")
-      .reduce(
-        (obj: string, prop: number) => (obj ? obj[prop] : undefined),
-        data
-      );
-    return value !== undefined && value !== null ? value : fallback;
-  });
-}
-
-//send sms with sparrowsms api
-const sendSms = async (phoneNo: string, message: string) => {
-  try {
-    const sentMessage = await axios.post("http://api.sparrowsms.com/v2/sms", {
-      token: process.env.SMS_TOKEN,
-      from: "InfoAlert",
-      to: phoneNo,
-      text: message,
-    });
-    console.log("Message sent", sentMessage.data);
-  } catch (error: any) {
-    console.log("Error sending message", error.message);
-  }
-};
-
+//setup email
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "mail.bizzsoftw.com",
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+
+console.log("Env", process.env.EMAIL_USER, process.env.EMAIL_PASS);
 
 transporter.verify((error, success) => {
   if (error) {
@@ -69,7 +47,6 @@ transporter.verify((error, success) => {
   }
 });
 
-// Helper function to send email
 const sendEmail = async (to: string, subject: string, text: string) => {
   console.log(to, subject, text);
   try {
@@ -85,12 +62,9 @@ const sendEmail = async (to: string, subject: string, text: string) => {
   }
 };
 
-// Run cron jobs
 export const runCronJobs = async () => {
   console.log("running cron jobs");
-
   new cron.CronJob(
-    // Daily time to send notification taken from business config
     `0 ${notificationTimeMinute} ${notificationTimeHour} * * * `,
     async () => {
       sendTodaysOrders();
@@ -103,47 +77,58 @@ export const runCronJobs = async () => {
 };
 
 async function sendTodaysOrders() {
-  // Fetch all orders whose next Service date is today along with customer details.
-  const response = await serviceOrderModel
-    .find({
-      date: new Date().toISOString().split("T")[0],
-    })
-    .populate({ path: "customer", populate: "user", select: "-password" });
+  try {
+    // Fetch all orders whose next Service date is today along with customer details.
+    const response = await serviceOrderModel
+      .find({
+        date: new Date().toISOString().split("T")[0],
+      })
+      .populate({
+        path: "customer",
+        populate: { path: "user", select: "email" },
+      })
+      .populate({ path: "service", select: "title serviceCharge" });
 
-  // get phone numbers of the customer.
-  const todaysOrder: any = response.map((order) => {
-    const plainOrder = order.toObject();
-    if (plainOrder.date) {
-      plainOrder.date = new Date(plainOrder.date)
-        .toISOString()
-        .split("T")[0] as any;
-    }
-    return plainOrder;
-  });
-
-  console.log("Today's Order", todaysOrder);
-
-  const sentPhoneNumbers = new Set();
-
-  // send message/mail to all the customer
-  todaysOrder.forEach((order: any) => {
-    const phoneNo = order.customer?.phoneNo || "";
-
-    if (phoneNo && !sentPhoneNumbers.has(phoneNo)) {
-      sentPhoneNumbers.add(phoneNo);
-
-      const message = replacePlaceholders(template, order, "Customer");
-      console.log("Sending Message to:", phoneNo);
-      console.log(message);
-
-      const customerEmail = order.customer?.user?.email;
-
-      // sendSms(phoneNo, message);
-      if (customerEmail) {
-        // sendEmail(customerEmail, "Service Order Notification", message);
+    // get phone numbers of the customer.
+    const todaysOrder: any = response.map((order) => {
+      const plainOrder = order.toObject();
+      if (plainOrder.date) {
+        plainOrder.date = new Date(plainOrder.date)
+          .toISOString()
+          .split("T")[0] as any;
       }
+      return plainOrder;
+    });
+
+    const sentPhoneNumbers = new Set();
+
+    const orderSms = await templateModel.findById(OrderSmsTemplateId);
+
+    if (!orderSms) {
+      console.error("OrderSMS template not found");
     }
-  });
+
+    const orderSmsTemplate = orderSms?.body || template;
+
+    todaysOrder.forEach((order: any) => {
+      const phoneNo = order.customer?.phoneNo || "";
+
+      if (phoneNo && !sentPhoneNumbers.has(phoneNo)) {
+        sentPhoneNumbers.add(phoneNo);
+
+        const message = replacePlaceholders(orderSmsTemplate, order);
+
+        const customerEmail = order.customer?.user?.email;
+
+        // sendSms(phoneNo, message);
+        if (customerEmail) {
+          // sendEmail(customerEmail, "Service Order Notification", message);
+        }
+      }
+    });
+  } catch (error) {
+    console.log("Error sending todays order", error);
+  }
 }
 
 async function sendUpcommingOrders() {
@@ -173,7 +158,7 @@ async function sendUpcommingOrders() {
 
   upcommingOrder.forEach((order: any) => {
     console.log("Sending Message to :", order.customer?.phoneNo || "No phone");
-    const sms_message = replacePlaceholders(template, order, "Customer");
+    const sms_message = replacePlaceholders(template, order);
     console.log(sms_message);
     const phoneNo = order.customer?.phoneNo || "";
     if (phoneNo) {
