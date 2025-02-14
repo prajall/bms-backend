@@ -3,7 +3,7 @@ import templateModel from "./template.model";
 import { apiError, apiResponse } from "../../../utils/response.util";
 import mongoose from "mongoose";
 
-const extractPlaceholders = (text: string) => {
+export const extractPlaceholders = (text: string) => {
   const regex = /{{(.*?)}}/g;
   const matches = text.match(regex);
   return matches
@@ -122,7 +122,7 @@ export const getAllTemplate = async (req: Request, res: Response) => {
     if (type) {
       filter.type = type.toString();
     }
-    const templates = await templateModel.find();
+    const templates = await templateModel.find(filter);
     return apiResponse(res, 200, "Templates retrieved successfully", templates);
   } catch (error: any) {
     console.error("Error fetching templates:", error.message);
@@ -132,7 +132,7 @@ export const getAllTemplate = async (req: Request, res: Response) => {
 
 export const getTemplateById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.query;
+    const { id } = req.params;
 
     if (!id || !mongoose.isValidObjectId(id)) {
       return apiError(res, 400, "Invalid Template Id format");

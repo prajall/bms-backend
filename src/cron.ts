@@ -6,7 +6,8 @@ import axios from "axios";
 
 const template =
   "Hello {{customer.name}}. This is to notify you that you have a service order for {{orderId}} today.";
-
+const OrderSmsId = "67ac6e2be7dca55eccb4e91a";
+const orderEmail = "67ac6e2be7dca55eccb4e91a";
 //read notification time from business config
 const configHour =
   readConfig("business").notifications?.upcommingOrder?.notificationTime?.hour;
@@ -15,8 +16,6 @@ const configMinute =
     ?.minute;
 const configDaysBefore =
   readConfig("business").notifications?.upcommingOrder?.daysBefore;
-
-console.log(configHour, configMinute, configDaysBefore);
 
 const notificationTimeHour =
   configHour > 0 ? (configHour < 24 ? configHour : "9") : "9";
@@ -75,7 +74,7 @@ const sendEmail = async (to: string, subject: string, text: string) => {
   console.log(to, subject, text);
   try {
     const info = await transporter.sendMail({
-      from: `"Your Company"`,
+      from: `"Company"`,
       to,
       subject,
       text,
@@ -87,7 +86,6 @@ const sendEmail = async (to: string, subject: string, text: string) => {
 };
 
 // Run cron jobs
-
 export const runCronJobs = async () => {
   console.log("running cron jobs");
 
@@ -114,7 +112,7 @@ async function sendTodaysOrders() {
 
   // get phone numbers of the customer.
   const todaysOrder: any = response.map((order) => {
-    const plainOrder = order.toObject(); // Convert Mongoose document to plain object
+    const plainOrder = order.toObject();
     if (plainOrder.date) {
       plainOrder.date = new Date(plainOrder.date)
         .toISOString()
@@ -122,6 +120,8 @@ async function sendTodaysOrders() {
     }
     return plainOrder;
   });
+
+  console.log("Today's Order", todaysOrder);
 
   const sentPhoneNumbers = new Set();
 
@@ -146,7 +146,6 @@ async function sendTodaysOrders() {
   });
 }
 
-// send upcomming orders notification (configurable in business config)
 async function sendUpcommingOrders() {
   const upcommingDay = new Date();
   upcommingDay.setDate(upcommingDay.getDate() + configDaysBefore);
@@ -159,7 +158,7 @@ async function sendUpcommingOrders() {
 
   // get phone numbers of the customer.
   const upcommingOrder: any = response.map((order) => {
-    const plainOrder = order.toObject(); // Convert Mongoose document to plain object
+    const plainOrder = order.toObject();
     if (plainOrder.date) {
       plainOrder.date = new Date(plainOrder.date)
         .toISOString()
@@ -172,7 +171,6 @@ async function sendUpcommingOrders() {
     .filter((phoneNo: string) => phoneNo !== undefined);
   console.log(phoneNumbers);
 
-  // send message/mail to all the customer
   upcommingOrder.forEach((order: any) => {
     console.log("Sending Message to :", order.customer?.phoneNo || "No phone");
     const sms_message = replacePlaceholders(template, order, "Customer");

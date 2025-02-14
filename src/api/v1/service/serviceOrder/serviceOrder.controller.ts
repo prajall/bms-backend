@@ -215,8 +215,15 @@ export const createServiceOrder = async (req: Request, res: Response) => {
 
 export const getAllServiceOrders = async (req: Request, res: Response) => {
   try {
-    const { customer, parentServiceOrder, search, status, paymentStatus } =
-      req.query;
+    const {
+      customer,
+      parentServiceOrder,
+      search,
+      status,
+      paymentStatus,
+      sortParam,
+      sortOrder,
+    } = req.query;
 
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -268,6 +275,17 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
       ];
     }
 
+    const allowedSortFields: Record<string, string> = {
+      date: "date",
+      customer: "customer.name",
+      upcomingDate: "upcomingDate",
+      createdAt: "createdAt",
+    };
+
+    const sortField = allowedSortFields[sortParam as string] || "createdAt";
+
+    const sortValue = sortOrder === "asc" ? 1 : -1;
+
     const skip = (page - 1) * limit;
 
     const pipeline: PipelineStage[] = [
@@ -300,9 +318,10 @@ export const getAllServiceOrders = async (req: Request, res: Response) => {
         },
       },
       { $match: match },
+      { $sort: { [sortField]: sortValue } },
       {
         $facet: {
-          data: [{ $skip: skip }, { $limit: limit }, { $sort: { date: -1 } }],
+          data: [{ $skip: skip }, { $limit: limit }],
           totalCount: [{ $count: "count" }],
         },
       },

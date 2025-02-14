@@ -4,6 +4,7 @@ import { apiError, apiResponse } from "../../../utils/response.util";
 import serviceOrderModel from "../service/serviceOrder/serviceOrder.model";
 import posOrderModel from "../pos/pos.model";
 import Counter from "../models/Counter";
+import mongoose, { PipelineStage } from "mongoose";
 
 export const createBilling = async (req: Request, res: Response) => {
   const {
@@ -192,57 +193,123 @@ export const getBillings = async (req: Request, res: Response) => {
   const skip = (page - 1) * limit;
 
   try {
-    let filter: any = {};
+    let match: any = {};
+
+    // Apply filters
     if (status) {
-      filter.status = status;
+      match.status = status;
     }
     if (customerId) {
-      filter.customer = customerId;
+      match["customer._id"] = new mongoose.Types.ObjectId(customerId as string);
     }
     if (serviceOrders && serviceOrders.length > 0) {
-      filter["serviceOrders.serviceOrder"] = {
+      match["serviceOrders"] = {
         $in: serviceOrders.map(
-          (order: { serviceOrder: string }) => order.serviceOrder
+          (order: { serviceOrder: string }) =>
+            new mongoose.Types.ObjectId(order.serviceOrder)
         ),
       };
     }
-
     if (date) {
       const billingDate = new Date(date);
-      filter.date = {
+      match.date = {
         $gte: new Date(billingDate.setHours(0, 0, 0, 0)),
         $lt: new Date(billingDate.setHours(23, 59, 59, 999)),
       };
     }
 
-    const billings = await Billing.find(filter)
-      .populate({
-        path: "customer",
-        select: "name user _id phoneNo address",
-        populate: { path: "user", select: "email _id" },
-      })
-      .populate({
-        path: "serviceOrders",
-        populate: {
-          path: "serviceOrder",
-          select: "serviceCharge discount status paymentStatus",
-          populate: { path: "service", select: "title" },
+    // ✅ Search Functionality
+    if (search) {
+      const searchRegex = new RegExp(search as string, "i"); // Case-insensitive search
+      match.$or = [
+        { "customer.name": searchRegex },
+        { "customer.phoneNo": searchRegex },
+        { "customer.user.email": searchRegex },
+        { "serviceOrdersData.serviceOrder.service.title": searchRegex },
+        { invoice: searchRegex },
+        { "serviceOrders.orderId": searchRegex },
+      ];
+    }
+
+    // ✅ Aggregation Pipeline
+    const pipeline: PipelineStage[] = [
+      {
+        $lookup: {
+          from: "customers",
+          localField: "customer",
+          foreignField: "_id",
+          as: "customer",
         },
-      })
+      },
+      {
+        $unwind: {
+          path: "$customer",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "customer.user",
+          foreignField: "_id",
+          as: "customer.user",
+        },
+      },
+      {
+        $unwind: {
+          path: "$customer.user",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "serviceorders",
+          localField: "serviceOrders",
+          foreignField: "_id",
+          as: "serviceOrdersData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$serviceOrdersData",
+          preserveNullAndEmptyArrays: true, // ✅ Prevents data loss when array is empty
+        },
+      },
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceOrdersData.serviceOrder",
+          foreignField: "_id",
+          as: "serviceOrdersData.serviceOrder.service",
+        },
+      },
+      {
+        $unwind: {
+          path: "$serviceOrdersData.serviceOrder.service",
+          preserveNullAndEmptyArrays: true, // ✅ Ensures documents without services are not removed
+        },
+      },
+      { $match: match }, // ✅ Apply filters & search query
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          data: [{ $skip: skip }, { $limit: limit }],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ];
 
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec();
+    // Execute aggregation
+    const results = await Billing.aggregate(pipeline);
 
-    const totalBillings = await Billing.countDocuments(filter);
-    const totalPages = Math.ceil(totalBillings / limit);
+    const billings = results[0]?.data || [];
+    const totalBillings = results[0]?.totalCount[0]?.count || 0;
 
     return apiResponse(res, 200, "Billings fetched successfully", {
       billings,
       totalBillings,
       currentPage: page,
-      totalPages,
+      totalPages: Math.ceil(totalBillings / limit),
     });
   } catch (error: any) {
     console.error("Error fetching billings:", error);
