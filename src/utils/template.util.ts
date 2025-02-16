@@ -4,6 +4,7 @@ import axios from "axios";
 import templateModel from "../api/v1/template/template.model";
 import mongoose from "mongoose";
 import serviceOrderModel from "../api/v1/service/serviceOrder/serviceOrder.model";
+import { sendEmail } from "../cron";
 
 export function replacePlaceholders(template: string, data: any) {
   const regex = /{{(.*?)}}/g;
@@ -58,10 +59,10 @@ export const sendServiceOrderSms = async (serviceOrder: any) => {
 
       const customerEmail = serviceOrder.customer?.user?.email;
 
-      console.log("SErvice confirmed: ", message);
+      console.log("Service confirmed: ", message);
       // sendSms(serviceOrder.customer?.phoneNo, message);
       if (customerEmail) {
-        // sendEmail(customerEmail, "Service Order Notification", message);
+        sendEmail(customerEmail, "Service Order Notification", message);
       }
     }
   } catch (error: any) {

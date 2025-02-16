@@ -51,7 +51,7 @@ transporter.verify((error, success) => {
   }
 });
 
-const sendEmail = async (to: string, subject: string, text: string) => {
+export const sendEmail = async (to: string, subject: string, text: string) => {
   console.log(to, subject, text);
   try {
     const info = await transporter.sendMail({
