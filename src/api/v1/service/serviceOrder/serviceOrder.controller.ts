@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import ServiceOrder from "./serviceOrder.model";
-import ServiceProvided from "../serviceProvided/serviceProvided.model";
-import Product from "../../items/products/product.model";
 import { apiError, apiResponse } from "../../../../utils/response.util";
 import { createOrder } from "../../order/order.controller";
 import { createBilling } from "../../billing/billing.controller";
 import Service from "../service/service.model";
 import mongoose, { PipelineStage } from "mongoose";
 import BillingModel from "../../billing/billing.model";
+import { sendServiceOrderSms } from "../../../../utils/template.util";
+import customerModel from "../../customer/customer.model";
+import serviceModel from "../service/service.model";
 
 interface ServiceOrder {
   order: string;
@@ -50,8 +51,8 @@ export const createServiceOrder = async (req: Request, res: Response) => {
     if (!serviceOrderDoc) {
       return apiError(res, 400, "Service does not exist");
     }
-
-    const date = new Date().toISOString();
+    console.log("Date: ", new Date().toISOString().split("T")[0]);
+    const date = new Date().toISOString().split("T")[0];
     const discountedAmount = serviceCharge - (serviceCharge * discount) / 100;
     const remainingAmount = discountedAmount - paidAmount;
 
@@ -150,6 +151,21 @@ export const createServiceOrder = async (req: Request, res: Response) => {
       await session.abortTransaction();
       session.endSession();
       return apiError(res, 500, "Failed to create service order");
+    }
+    console.log(serviceOrder[0]._id.toString());
+
+    const customerDoc = await customerModel.findById(customer);
+    const serviceDoc = await serviceModel.findById(service);
+    if (customerDoc) {
+      const serviceOrderWithCustomer = {
+        ...serviceOrder[0]._doc,
+        customer: customerDoc,
+        service: serviceDoc,
+        date: date,
+      };
+
+      // send sms for order confirmation
+      sendServiceOrderSms(serviceOrderWithCustomer);
     }
 
     await session.commitTransaction();

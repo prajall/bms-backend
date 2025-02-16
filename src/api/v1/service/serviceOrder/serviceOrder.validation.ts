@@ -36,14 +36,6 @@ export const serviceOrderValidation = [
   body("nextServiceDate")
     .optional({ values: "null" }) // Allows empty value ("" or null)
     .custom((value, { req }) => {
-      if (value) {
-        if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(value)) {
-          throw new Error(
-            "Invalid next service date format. Please use ISO 8601 format"
-          );
-        }
-      }
-
       // Check for isRecurring condition
       if (req.body.isRecurring && !value) {
         throw new Error("Next Service date is required for recurring service");

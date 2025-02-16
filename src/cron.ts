@@ -4,7 +4,11 @@ import serviceOrderModel from "./api/v1/service/serviceOrder/serviceOrder.model"
 import { readConfig } from "./utils/config.utils";
 import axios from "axios";
 import templateModel from "./api/v1/template/template.model";
-import { replacePlaceholders, sendSms } from "./utils/template.util";
+import {
+  replacePlaceholders,
+  sendServiceOrderSms,
+  sendSms,
+} from "./utils/template.util";
 
 const template =
   "Hello {{customer.name}}. This is to notify you that you have a service order for {{orderId}} today.";
@@ -41,7 +45,7 @@ console.log("Env", process.env.EMAIL_USER, process.env.EMAIL_PASS);
 
 transporter.verify((error, success) => {
   if (error) {
-    console.log("Transporter Error:", error.message);
+    console.log("Email Transporter Error:", error.message);
   } else {
     console.log("Server is ready to send emails");
   }
@@ -111,20 +115,21 @@ async function sendTodaysOrders() {
     const orderSmsTemplate = orderSms?.body || template;
 
     todaysOrder.forEach((order: any) => {
-      const phoneNo = order.customer?.phoneNo || "";
+      sendServiceOrderSms(order);
+      // const phoneNo = order.customer?.phoneNo || "";
 
-      if (phoneNo && !sentPhoneNumbers.has(phoneNo)) {
-        sentPhoneNumbers.add(phoneNo);
+      // if (phoneNo && !sentPhoneNumbers.has(phoneNo)) {
+      //   sentPhoneNumbers.add(phoneNo);
 
-        const message = replacePlaceholders(orderSmsTemplate, order);
+      //   const message = replacePlaceholders(orderSmsTemplate, order);
 
-        const customerEmail = order.customer?.user?.email;
+      //   const customerEmail = order.customer?.user?.email;
 
-        // sendSms(phoneNo, message);
-        if (customerEmail) {
-          // sendEmail(customerEmail, "Service Order Notification", message);
-        }
-      }
+      //   // sendSms(phoneNo, message);
+      //   if (customerEmail) {
+      //     // sendEmail(customerEmail, "Service Order Notification", message);
+      //   }
+      // }
     });
   } catch (error) {
     console.log("Error sending todays order", error);
@@ -168,5 +173,5 @@ async function sendUpcommingOrders() {
   });
 }
 
-sendTodaysOrders();
+// sendTodaysOrders();
 // sendUpcommingOrders();
